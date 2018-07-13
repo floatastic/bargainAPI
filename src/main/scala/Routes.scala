@@ -1,9 +1,9 @@
-import api.{ApiErrorHandler, LotsApi}
+import api.{ApiErrorHandler, AuctionsApi}
 import akka.http.scaladsl.server.Directives._
 
-trait Routes extends ApiErrorHandler with LotsApi {
+trait Routes extends ApiErrorHandler with AuctionsApi {
   val routes =
     pathPrefix("v1") {
-      lotsApi
+      auctionsApi
     }
 }
