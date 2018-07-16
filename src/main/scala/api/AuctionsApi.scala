@@ -5,11 +5,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import entities.{AuctionData}
 import mappings.JsonMappings
-import persistence.MemStorage
 
-trait AuctionsApi extends JsonMappings {
-
-  val persistence = MemStorage.shared
+trait AuctionsApi extends JsonMappings with PersistanceHolder {
 
   val auctionsApi: Route = pathPrefix("auctions") {
     pathEnd {
