@@ -6,7 +6,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
 import entities.Auction
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 
 class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes {
