@@ -1,6 +1,6 @@
 import java.util.UUID
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.scalatest.{Matchers, WordSpec}
@@ -27,15 +27,21 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
     }
 
     "return a created object id given valid POST data" in {
-      Post("/auctions").withEntity("{\"data\": \"Test auction\"}") ~> auctionsApi ~> check {
+      val entity = HttpEntity(MediaTypes.`application/json`,
+        "{\"data\": \"Test auction\"}")
+
+      Post("/auctions").withEntity(entity) ~> auctionsApi ~> check {
         status shouldEqual StatusCodes.OK
         Try(UUID.fromString(responseAs[String])) shouldBe 'success
       }
     }
 
     "reject request given invalid content" in {
-      Post("/auctions").withEntity("{\"wrongField\": \"Test auction\"}") ~> auctionsApi ~> check {
-        rejection shouldEqual UnsupportedRequestContentTypeRejection(Set(ContentTypes.`application/json`))
+      val entity = HttpEntity(MediaTypes.`application/json`,
+        "{\"wrongField\": \"Test auction\"}")
+
+      Post("/auctions").withEntity(entity) ~> auctionsApi ~> check {
+        rejections.length shouldEqual 1
       }
     }
   }
