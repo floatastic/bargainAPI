@@ -11,5 +11,5 @@ trait AuctionService {
 
   def addLot(auctionId: AuctionId, data: LotData): Option[LotId]
 
-  def getLots(auctionId: AuctionId, limit: Int, offset: Int): LimitedResult[Lot]
+  def getLots(auctionId: AuctionId, limit: Option[Int], offset: Option[Int]): LimitedResult[Lot]
 }

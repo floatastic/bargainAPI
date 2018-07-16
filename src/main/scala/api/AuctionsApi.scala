@@ -6,20 +6,20 @@ import akka.http.scaladsl.server.Route
 import entities.{AuctionData}
 import mappings.JsonMappings
 
-trait AuctionsApi extends JsonMappings with PersistanceHolder {
+trait AuctionsApi extends JsonMappings with ServiceHolder {
 
   val auctionsApi: Route = pathPrefix("auctions") {
     pathEnd {
       post {
         entity(as[AuctionData]) { (auctionData: AuctionData) =>
-          val auctionId = persistence.createAuction(auctionData)
+          val auctionId = service.createAuction(auctionData)
           complete(auctionId)
         }
       }
     } ~
       path(Segment) { id =>
         get {
-          persistence.getAuction(id) match {
+          service.getAuction(id) match {
             case Some(auction) => complete(auction)
             case _ => complete(StatusCodes.NotFound)
           }
