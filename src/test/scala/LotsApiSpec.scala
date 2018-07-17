@@ -80,5 +80,10 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       }
     }
 
+    "return 404 not found given unexisting auction id" in {
+      Get("/lots?auctionId=4ac772c5-bc52-5555-ba9e-4010f511e175") ~> lotsApi ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
+    }
   }
 }

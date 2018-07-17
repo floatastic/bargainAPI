@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Route
 import entities.{AuctionData, AuctionId, LotData}
 import mappings.{JsonMappings, LotPostData}
 
-trait LotsApi extends JsonMappings with ServiceHolder {
+trait LotsApi extends JsonMappings with ServiceHolder with AuctionValidator {
 
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {
@@ -22,7 +22,9 @@ trait LotsApi extends JsonMappings with ServiceHolder {
         }
       } ~
       parameters('auctionId, 'limit.as[Int].?, 'offset.as[Int].?) { (auctionId: AuctionId, limit, offset) =>
-        complete(service.getLots(auctionId, limit, offset))
+        findAuctionOrNotFound(auctionId) { auction =>
+          complete(service.getLots(auction.id, limit, offset))
+        }
       }
     }
   }
