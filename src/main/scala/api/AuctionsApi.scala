@@ -1,11 +1,14 @@
 package api
 
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Route, StandardRoute}
+import api.AuctionsApi.AuctionPostData
 import entities.{Auction, AuctionData, AuctionId}
-import mappings.{AuctionPostData, JsonMappings}
+import mappings.JsonMappings
+
+object AuctionsApi {
+  case class AuctionPostData(data: AuctionData)
+}
 
 trait AuctionsApi extends JsonMappings with ServiceHolder with AuctionValidator {
 

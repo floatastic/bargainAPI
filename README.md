@@ -54,3 +54,21 @@ HTTP/1.1 200 OK
   "total":3
 }
 ```
+
+## Parameters validation
+
+Validation was done with scalaz validation. An example call to demonstrate it:
+```
+curl -v http://localhost:9001/v1/lots?auctionId=4bc52-4d3c&offset=-1&limit=0
+```
+will produce a following response
+```
+HTTP/1.1 400 Bad Request
+{
+  "errors": [
+    "Invalid auction Id",
+    "Invalid limit",
+    "Invalid offset"
+  ]
+}
+```
