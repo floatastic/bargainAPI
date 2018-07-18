@@ -57,7 +57,10 @@ HTTP/1.1 200 OK
 
 ## Parameters validation
 
-Validation was done with scalaz validation. An example call to demonstrate it:
+Validation was done with scalaz validation. 
+
+Example calls to demonstrate it:
+- GET lots/
 ```
 curl -v http://localhost:9001/v1/lots?auctionId=4bc52-4d3c&offset=-1&limit=0
 ```
@@ -66,9 +69,23 @@ will produce a following response
 HTTP/1.1 400 Bad Request
 {
   "errors": [
-    "Invalid auction Id",
-    "Invalid limit",
-    "Invalid offset"
+    "Invalid auction Id. Please provide a valid UUID.",
+    "Limit should be a value between 0 and 100 (right inclusive).",
+    "Offset should be a value greater than 0."
+  ]
+}
+```
+- POST lots/
+```
+curl -v -H "Content-Type: application/json" http://localhost:9001/v1/lots -d '{"auctionId": "0ae024c0-0ddb-4e59-9e2c-721a27c384f6", "lotData": ""}'
+```
+will produce a following response
+```
+HTTP/1.1 400 Bad Request
+{
+  "errors": [
+    "Invalid auction Id. Auction does not exist.",
+    "Lot data cannot be empty."
   ]
 }
 ```

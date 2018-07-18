@@ -2,15 +2,11 @@ import java.util.UUID
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromResponseUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
-import akka.stream.Materializer
-import akka.util.ByteString
-import entities.{Auction, Lot}
-import mappings.JsonMappings
+import api.InputValidator.ErrorMsgs
+import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
 import persistence.LimitedResult
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes {
@@ -36,15 +32,6 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
 
       Post("/lots").withEntity(entity) ~> lotsApi ~> check {
         rejections.length shouldEqual 2
-      }
-    }
-
-    "return 400 bad request given unexisting auction id" in {
-      val entity = HttpEntity(MediaTypes.`application/json`,
-        "{\"auctionId\": \"0ae024c0-0ddb-4e59-5555-721a27c386f6\", \"lotData\": \"Test lot\"}")
-
-      Post("/lots").withEntity(entity) ~> lotsApi ~> check {
-        status shouldEqual StatusCodes.BadRequest
       }
     }
 
@@ -83,6 +70,35 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     "return 404 not found given unexisting auction id" in {
       Get("/lots?auctionId=4ac772c5-bc52-5555-ba9e-4010f511e175") ~> lotsApi ~> check {
         status shouldEqual StatusCodes.NotFound
+      }
+    }
+
+    "return a 400 with errors given bad format of UUID or wrong limit or offset values" in {
+      Get("/lots?auctionId=4ac772c5-bc52-4d3c&limit=200&offset=-1") ~> lotsApi ~> check {
+        status shouldEqual StatusCodes.BadRequest
+
+        val errors = responseAs[ErrorMsgs].errors
+        errors.length shouldBe 3
+
+        errors(0) shouldEqual "Invalid auction Id. Please provide a valid UUID."
+        errors(1) shouldEqual "Limit should be a value between 0 and 100 (right inclusive)."
+        errors(2) shouldEqual "Offset should be a value greater than 0."
+      }
+    }
+
+    "return 400 with errors given bad format of UUID and empty data" in {
+      val entity = HttpEntity(MediaTypes.`application/json`,
+        "{\"auctionId\": \"721a27c386f6\", \"lotData\": \"    \"}")
+
+      Post("/lots").withEntity(entity) ~> lotsApi ~> check {
+        status shouldEqual StatusCodes.BadRequest
+
+        val errors = responseAs[ErrorMsgs].errors
+        errors.length shouldBe 3
+
+        errors(0) shouldEqual "Invalid auction Id. Please provide a valid UUID."
+        errors(1) shouldEqual "Invalid auction Id. Auction does not exist."
+        errors(2) shouldEqual "Lot data cannot be empty."
       }
     }
   }

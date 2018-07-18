@@ -20,12 +20,15 @@ trait LotsApi extends JsonMappings with ServiceHolder with AuctionValidator with
     pathEnd {
       post {
         entity(as[LotPostData]) { (postData: LotPostData) =>
-          service.getAuction(postData.auctionId) match {
-            case Some(auction) => {
-              val lotId = service.addLot(auction.id, postData.lotData)
+
+          validatePostLotsInput(postData) match {
+            case Success(postData) => {
+              val lotId = service.addLot(postData.auctionId, postData.lotData)
               complete(lotId)
             }
-            case _ => complete(StatusCodes.custom(StatusCodes.BadRequest.intValue, s"Auction not found (id: ${postData.auctionId})"))
+            case Failure(errors) => {
+              complete(StatusCodes.BadRequest -> ErrorMsgs(errors.toList))
+            }
           }
         }
       } ~
