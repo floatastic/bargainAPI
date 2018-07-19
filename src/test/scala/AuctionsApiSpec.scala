@@ -3,6 +3,7 @@ import java.util.UUID
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import api.InputValidator.ErrorMsgs
 import org.scalatest.{Matchers, WordSpec}
 import entities.Auction
 
@@ -26,6 +27,17 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
       }
     }
 
+    "return 400 with error given wrong format of ID" in {
+      Get("/auctions/55555555-bc52") ~> auctionsApi ~> check {
+        status shouldEqual StatusCodes.BadRequest
+
+        val errors = responseAs[ErrorMsgs].errors
+        errors.length shouldBe 1
+
+        errors(0) shouldEqual "Invalid auction Id. Please provide a valid UUID."
+      }
+    }
+
     "return a created object id given valid POST data" in {
       val entity = HttpEntity(MediaTypes.`application/json`,
         "{\"data\": \"Test auction\"}")
@@ -42,6 +54,20 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
 
       Post("/auctions").withEntity(entity) ~> auctionsApi ~> check {
         rejections.length shouldEqual 1
+      }
+    }
+
+    "return 400 with error given empty data" in {
+      val entity = HttpEntity(MediaTypes.`application/json`,
+        "{\"data\": \"   \"}")
+
+      Post("/auctions").withEntity(entity) ~> auctionsApi ~> check {
+        status shouldEqual StatusCodes.BadRequest
+
+        val errors = responseAs[ErrorMsgs].errors
+        errors.length shouldBe 1
+
+        errors(0) shouldEqual "Auction data cannot be empty."
       }
     }
   }
