@@ -21,14 +21,8 @@ trait AuctionsApi extends JsonMappings with ServiceHolder with BaseApi with Inpu
       post {
         entity(as[AuctionPostData]) { (auctionData: AuctionPostData) =>
 
-          validatePostAuctionInput(auctionData) match {
-            case Success(auctionData) => {
-              val auctionId = service.createAuction(auctionData.data)
-              complete(auctionId)
-            }
-            case Failure(errors) => {
-              complete(StatusCodes.BadRequest -> ErrorMsgs(errors.toList))
-            }
+          validDataOrBadRequest(auctionData)(validatePostAuctionInput) { input =>
+            complete(service.createAuction(input.data))
           }
 
         }

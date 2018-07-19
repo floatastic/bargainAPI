@@ -2,11 +2,10 @@ package api
 
 import java.util.UUID
 
-import entities.AuctionId
 import scalaz._
 import Scalaz._
 import api.AuctionsApi.AuctionPostData
-import api.LotsApi.LotPostData
+import api.LotsApi.{GetInput, PostInput}
 import persistence.AuctionService
 
 import scala.util.Try
@@ -14,7 +13,6 @@ import scala.util.Try
 object InputValidator {
   type ErrorMsg = String
   type VNel[A] = ValidationNel[ErrorMsg, A]
-  type GetLotsInput = (AuctionId, Option[Int], Option[Int])
 
   case class ErrorMsgs(errors: List[ErrorMsg])
 
@@ -46,23 +44,23 @@ trait InputValidator {
 
   def validData(data: String): Option[String] = if (data.trim.length > 0) Some(data) else None
 
-  def validateGetLotsInput(auctionId: AuctionId, limit: Option[Int], offset: Option[Int]): VNel[GetLotsInput] = {
+  def validateGetLotsInput(input: LotsApi.GetInput): VNel[LotsApi.GetInput] = {
     (
-      validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-      validLimit(limit).toSuccessNel(limitErrorMsg) |@|
-      validOffset(offset).toSuccessNel(offsetErrorMsg)
+      validUUIDString(input.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
+      validLimit(input.limit).toSuccessNel(limitErrorMsg) |@|
+      validOffset(input.offset).toSuccessNel(offsetErrorMsg)
     ) {
-      (aId, lim, off) => (aId, lim, off)
+      (aId, lim, off) => GetInput(aId, lim, off)
     }
   }
 
-  def validatePostLotsInput(lotPostData: LotPostData): VNel[LotPostData] = {
+  def validatePostLotsInput(lotPostData: LotsApi.PostInput): VNel[LotsApi.PostInput] = {
     (
       validUUIDString(lotPostData.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
       service.getAuction(lotPostData.auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
       validData(lotPostData.lotData).toSuccessNel(lotDataErrorMsg)
     ) {
-      (auctionId, _, lotData) => LotPostData(auctionId, lotData)
+      (auctionId, _, lotData) => PostInput(auctionId, lotData)
     }
   }
 
