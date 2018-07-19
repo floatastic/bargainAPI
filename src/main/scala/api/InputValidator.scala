@@ -4,8 +4,9 @@ import java.util.UUID
 
 import scalaz._
 import Scalaz._
-import api.AuctionsApi.AuctionPostData
+import api.AuctionsApi.PostInput
 import api.LotsApi.{GetInput, PostInput}
+import entities.AuctionId
 import persistence.AuctionService
 
 import scala.util.Try
@@ -50,25 +51,33 @@ trait InputValidator {
       validLimit(input.limit).toSuccessNel(limitErrorMsg) |@|
       validOffset(input.offset).toSuccessNel(offsetErrorMsg)
     ) {
-      (aId, lim, off) => GetInput(aId, lim, off)
+      (_, _, _) => input
     }
   }
 
-  def validatePostLotsInput(lotPostData: LotsApi.PostInput): VNel[LotsApi.PostInput] = {
+  def validatePostLotsInput(input: LotsApi.PostInput): VNel[LotsApi.PostInput] = {
     (
-      validUUIDString(lotPostData.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-      service.getAuction(lotPostData.auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
-      validData(lotPostData.lotData).toSuccessNel(lotDataErrorMsg)
+      validUUIDString(input.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
+      service.getAuction(input.auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
+      validData(input.lotData).toSuccessNel(lotDataErrorMsg)
     ) {
-      (auctionId, _, lotData) => PostInput(auctionId, lotData)
+      (_, _, _) => input
     }
   }
 
-  def validatePostAuctionInput(auctionPostData: AuctionPostData): VNel[AuctionPostData] = {
+  def validateGetAuctionInput(input: AuctionsApi.GetInput): VNel[AuctionsApi.GetInput] = {
     Apply[VNel].apply(
-      validData(auctionPostData.data).toSuccessNel(auctionDataErrorMsg)
-    ){
-      auctionData => AuctionPostData(auctionData)
+      validUUIDString(input.id).toSuccessNel(auctionIdErrorMsg)
+    ) {
+      _ => input
+    }
+  }
+
+  def validatePostAuctionInput(input: AuctionsApi.PostInput): VNel[AuctionsApi.PostInput] = {
+    Apply[VNel].apply(
+      validData(input.data).toSuccessNel(auctionDataErrorMsg)
+    ) {
+      _ => input
     }
   }
 }

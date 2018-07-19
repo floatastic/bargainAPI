@@ -1,17 +1,14 @@
 package api
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Route, StandardRoute}
-import api.AuctionsApi.AuctionPostData
-import api.InputValidator.ErrorMsgs
-import entities.{Auction, AuctionData, AuctionId}
+import akka.http.scaladsl.server.Route
+import api.AuctionsApi.{GetInput, PostInput}
+import entities.{AuctionData, AuctionId}
 import mappings.JsonMappings
-import scalaz._
-import Scalaz._
 
 object AuctionsApi {
-  case class AuctionPostData(data: AuctionData)
+  case class GetInput(id: AuctionId)
+  case class PostInput(data: AuctionData)
 }
 
 trait AuctionsApi extends JsonMappings with ServiceHolder with BaseApi with InputValidator {
@@ -19,18 +16,19 @@ trait AuctionsApi extends JsonMappings with ServiceHolder with BaseApi with Inpu
   val auctionsApi: Route = pathPrefix("auctions") {
     pathEnd {
       post {
-        entity(as[AuctionPostData]) { (auctionData: AuctionPostData) =>
+        entity(as[PostInput]) { (input: PostInput) =>
 
-          validDataOrBadRequest(auctionData)(validatePostAuctionInput) { input =>
+          validDataOrBadRequest(input)(validatePostAuctionInput) { input =>
             complete(service.createAuction(input.data))
           }
 
         }
       }
     } ~
-      path(Segment) { id =>
-        akka.http.scaladsl.server.Directives.get {
-          findAuctionOrNotFound(id) { auction =>
+      path(Segment) { id: AuctionId =>
+
+        validDataOrBadRequest(GetInput(id))(validateGetAuctionInput) { input =>
+          findAuctionOrNotFound(input.id) { auction =>
             complete(auction)
           }
         }
