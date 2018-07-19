@@ -14,7 +14,7 @@ object LotsApi {
   case class LotPostData(auctionId: AuctionId, lotData: LotData)
 }
 
-trait LotsApi extends JsonMappings with ServiceHolder with AuctionValidator with InputValidator {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator {
 
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {

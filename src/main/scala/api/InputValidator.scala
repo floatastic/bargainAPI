@@ -5,7 +5,7 @@ import java.util.UUID
 import entities.AuctionId
 import scalaz._
 import Scalaz._
-import api.InputValidator.{ErrorMsg, GetLotsInput, VNel}
+import api.AuctionsApi.AuctionPostData
 import api.LotsApi.LotPostData
 import persistence.AuctionService
 
@@ -20,6 +20,7 @@ object InputValidator {
 
   val auctionIdErrorMsg = "Invalid auction Id. Please provide a valid UUID."
   val auctionNotFoundErrorMsg = "Invalid auction Id. Auction does not exist."
+  val auctionDataErrorMsg = "Auction data cannot be empty."
   val lotDataErrorMsg = "Lot data cannot be empty."
   val limitErrorMsg = "Limit should be a value between 0 and 100 (right inclusive)."
   val offsetErrorMsg = "Offset should be a value greater than 0."
@@ -46,18 +47,30 @@ trait InputValidator {
   def validData(data: String): Option[String] = if (data.trim.length > 0) Some(data) else None
 
   def validateGetLotsInput(auctionId: AuctionId, limit: Option[Int], offset: Option[Int]): VNel[GetLotsInput] = {
-    val aId = validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg)
-    val lim = validLimit(limit).toSuccessNel(limitErrorMsg)
-    val off = validOffset(offset).toSuccessNel(offsetErrorMsg)
-
-    Apply[VNel].apply3(aId, lim, off){(aId, lim, off) => (aId, lim, off)}
+    (
+      validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
+      validLimit(limit).toSuccessNel(limitErrorMsg) |@|
+      validOffset(offset).toSuccessNel(offsetErrorMsg)
+    ) {
+      (aId, lim, off) => (aId, lim, off)
+    }
   }
 
   def validatePostLotsInput(lotPostData: LotPostData): VNel[LotPostData] = {
-    val auctionId = validUUIDString(lotPostData.auctionId).toSuccessNel(auctionIdErrorMsg)
-    val auction = service.getAuction(lotPostData.auctionId).toSuccessNel(auctionNotFoundErrorMsg)
-    val lotData = validData(lotPostData.lotData).toSuccessNel(lotDataErrorMsg)
+    (
+      validUUIDString(lotPostData.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
+      service.getAuction(lotPostData.auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
+      validData(lotPostData.lotData).toSuccessNel(lotDataErrorMsg)
+    ) {
+      (auctionId, _, lotData) => LotPostData(auctionId, lotData)
+    }
+  }
 
-    Apply[VNel].apply3(auctionId, auction, lotData){(auctionId, _, lotData) => LotPostData(auctionId, lotData)}
+  def validatePostAuctionInput(auctionPostData: AuctionPostData): VNel[AuctionPostData] = {
+    Apply[VNel].apply(
+      validData(auctionPostData.data).toSuccessNel(auctionDataErrorMsg)
+    ){
+      auctionData => AuctionPostData(auctionData)
+    }
   }
 }
