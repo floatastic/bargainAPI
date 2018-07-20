@@ -65,14 +65,6 @@ trait InputValidator {
     }
   }
 
-  def validateGetAuctionInput(input: AuctionsApi.GetInput): VNel[AuctionsApi.GetInput] = {
-    Apply[VNel].apply(
-      validUUIDString(input.id).toSuccessNel(auctionIdErrorMsg)
-    ) {
-      _ => input
-    }
-  }
-
   def validatePostAuctionInput(input: AuctionsApi.PostInput): VNel[AuctionsApi.PostInput] = {
     Apply[VNel].apply(
       validData(input.data).toSuccessNel(auctionDataErrorMsg)

@@ -1,16 +1,19 @@
 import java.util.UUID
 
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, MediaTypes, StatusCodes}
-import akka.http.scaladsl.server.UnsupportedRequestContentTypeRejection
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import api.InputValidator.ErrorMsgs
-import org.scalatest.{Matchers, WordSpec}
+import api.{ApiRejectionHandler, ResponseUnmarshaller}
 import entities.Auction
+import org.scalatest.{Matchers, WordSpec}
 
 import scala.util.Try
 
+class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {
 
-class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes {
+  val sealedAuctionsApi = Route.seal(auctionsApi)
+
   "Auctions Api" should {
 
     "return an auction given a valid auction id" in {
@@ -28,13 +31,13 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
     }
 
     "return 400 with error given wrong format of ID" in {
-      Get("/auctions/55555555-bc52") ~> auctionsApi ~> check {
+      Get("/auctions/55555555-bc52") ~> sealedAuctionsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ErrorMsgs].errors
+        val errors = responseAs[ApiRejectionHandler.ErrorResponseMessage]._embedded
         errors.length shouldBe 1
 
-        errors(0) shouldEqual "Invalid auction Id. Please provide a valid UUID."
+        errors(0).message shouldEqual "requirement failed: Invalid auction Id. Please provide a valid UUID."
       }
     }
 
