@@ -12,7 +12,7 @@ import scala.util.Try
 
 object AuctionsApi {
   case class GetInput(id: AuctionId) {
-    require(Try(UUID.fromString(id).toString).isSuccess, "Invalid auction Id. Please provide a valid UUID.")
+    require(Try(UUID.fromString(id).toString).isSuccess, "Invalid auction Id. Auction Id must have a UUID format.")
   }
   case class PostInput(data: AuctionData)
 }

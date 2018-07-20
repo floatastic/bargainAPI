@@ -37,7 +37,7 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
         val errors = responseAs[ApiRejectionHandler.ErrorResponseMessage]._embedded
         errors.length shouldBe 1
 
-        errors(0).message shouldEqual "requirement failed: Invalid auction Id. Please provide a valid UUID."
+        errors(0).message shouldEqual "requirement failed: Invalid auction Id. Auction Id must have a UUID format."
       }
     }
 
