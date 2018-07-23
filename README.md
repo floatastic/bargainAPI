@@ -67,11 +67,11 @@ curl -v http://localhost:9001/v1/lots?auctionId=4bc52-4d3c&offset=-1&limit=0
 will produce a following response
 ```
 HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.error+json
 {
-  "errors": [
-    "Invalid auction Id. Please provide a valid UUID.",
-    "Limit should be a value between 0 and 100 (right inclusive).",
-    "Offset should be a value greater than 0."
+  "message": "Validation failed",
+  "_embedded": [
+    { "message": "requirement failed: Limit must be a value between 0 and 100 (right inclusive)."}
   ]
 }
 ```
@@ -82,10 +82,12 @@ curl -v -H "Content-Type: application/json" http://localhost:9001/v1/lots -d '{"
 will produce a following response
 ```
 HTTP/1.1 400 Bad Request
+Content-Type: application/vnd.error+json
 {
-  "errors": [
-    "Invalid auction Id. Auction does not exist.",
-    "Lot data cannot be empty."
+  "message": "Validation failed",
+  "_embedded": [
+    { "message": "Invalid auction Id. Auction does not exist."},
+    { "message": "Lot data cannot be empty."}
   ]
 }
 ```
