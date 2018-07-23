@@ -5,7 +5,7 @@ import java.util.UUID
 import scalaz._
 import Scalaz._
 import api.AuctionsApi.PostInput
-import api.LotsApi.{GetInput, PostInput}
+import api.LotsApi.{LimitedResultRequest, PostInput}
 import entities.AuctionId
 import persistence.AuctionService
 
@@ -14,8 +14,6 @@ import scala.util.Try
 object InputValidator {
   type ErrorMsg = String
   type VNel[A] = ValidationNel[ErrorMsg, A]
-
-  case class ErrorMsgs(errors: List[ErrorMsg])
 
   val auctionIdErrorMsg = "Invalid auction Id. Please provide a valid UUID."
   val auctionNotFoundErrorMsg = "Invalid auction Id. Auction does not exist."
@@ -33,25 +31,13 @@ trait InputValidator {
 
   def validUUIDString(uuid: String): Option[String] = Try(UUID.fromString(uuid).toString).toOption
 
-  def validLimit(limit: Option[Int]): Option[Option[Int]] = limit match {
-    case None => Some(None)
-    case Some(limit) => if (limit > 0 && limit <= 100) Some(Some(limit)) else None
-  }
-
-  def validOffset(offset: Option[Int]) = offset match {
-    case None => Some(None)
-    case Some(offset) => if (offset >= 0) Some(Some(offset)) else None
-  }
-
   def validData(data: String): Option[String] = if (data.trim.length > 0) Some(data) else None
 
-  def validateGetLotsInput(input: LotsApi.GetInput): VNel[LotsApi.GetInput] = {
-    (
-      validUUIDString(input.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-      validLimit(input.limit).toSuccessNel(limitErrorMsg) |@|
-      validOffset(input.offset).toSuccessNel(offsetErrorMsg)
+  def validateGetLotsInput(input: LotsApi.LimitedResultRequest[AuctionId]): VNel[LimitedResultRequest[AuctionId]] = {
+    Apply[VNel].apply(
+      validUUIDString(input.resourceId).toSuccessNel(auctionIdErrorMsg)
     ) {
-      (_, _, _) => input
+      _ => input
     }
   }
 

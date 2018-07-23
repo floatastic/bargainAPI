@@ -3,8 +3,8 @@ import java.util.UUID
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import api.InputValidator.ErrorMsgs
-import api.{ApiRejectionHandler, ResponseUnmarshaller}
+import api.ErrorResponse.ErrorResponseMessage
+import api.ResponseUnmarshaller
 import entities.Auction
 import org.scalatest.{Matchers, WordSpec}
 
@@ -34,7 +34,7 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
       Get("/auctions/55555555-bc52") ~> sealedAuctionsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ApiRejectionHandler.ErrorResponseMessage]._embedded
+        val errors = responseAs[ErrorResponseMessage]._embedded
         errors.length shouldBe 1
 
         errors(0).message shouldEqual "requirement failed: Invalid auction Id. Auction Id must have a UUID format."
@@ -67,10 +67,10 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
       Post("/auctions").withEntity(entity) ~> auctionsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ErrorMsgs].errors
+        val errors = responseAs[ErrorResponseMessage]._embedded
         errors.length shouldBe 1
 
-        errors(0) shouldEqual "Auction data cannot be empty."
+        errors(0).message shouldEqual "Auction data cannot be empty."
       }
     }
   }

@@ -3,8 +3,8 @@ import java.util.UUID
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import api.InputValidator.ErrorMsgs
-import api.{ApiRejectionHandler, ResponseUnmarshaller}
+import api.ErrorResponse.ErrorResponseMessage
+import api.ResponseUnmarshaller
 import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
 import persistence.LimitedResult
@@ -77,12 +77,12 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       }
     }
 
-    "return a 400 with errors given bad format of UUID or wrong limit or offset values" in {
-      Get("/lots?auctionId=4ac772c5-bc52-4d3c&limit=200&offset=-1") ~> sealedLotsApi ~> check {
+    "return a 400 with error given bad format of UUID" in {
+      Get("/lots?auctionId=4ac772c5-bc52-4d3c") ~> sealedLotsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ApiRejectionHandler.ErrorResponseMessage]._embedded
-        errors(0).message shouldEqual "requirement failed: Invalid auction Id. Auction Id must have a UUID format."
+        val errors = responseAs[ErrorResponseMessage]._embedded
+        errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
       }
     }
 
@@ -90,7 +90,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       Get("/lots?auctionId=4ac772c5-bc52-4d3c-ba9e-4010f511e175&limit=200") ~> sealedLotsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ApiRejectionHandler.ErrorResponseMessage]._embedded
+        val errors = responseAs[ErrorResponseMessage]._embedded
         errors(0).message shouldEqual "requirement failed: Limit must be a value between 0 and 100 (right inclusive)."
       }
     }
@@ -99,7 +99,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       Get("/lots?auctionId=4ac772c5-bc52-4d3c-ba9e-4010f511e175&offset=-1") ~> sealedLotsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ApiRejectionHandler.ErrorResponseMessage]._embedded
+        val errors = responseAs[ErrorResponseMessage]._embedded
         errors(0).message shouldEqual "requirement failed: Offset must be a value greater than or equal 0."
       }
     }
@@ -111,12 +111,12 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       Post("/lots").withEntity(entity) ~> lotsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ErrorMsgs].errors
+        val errors = responseAs[ErrorResponseMessage]._embedded
         errors.length shouldBe 3
 
-        errors(0) shouldEqual "Invalid auction Id. Please provide a valid UUID."
-        errors(1) shouldEqual "Invalid auction Id. Auction does not exist."
-        errors(2) shouldEqual "Lot data cannot be empty."
+        errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
+        errors(1).message shouldEqual "Invalid auction Id. Auction does not exist."
+        errors(2).message shouldEqual "Lot data cannot be empty."
       }
     }
   }
