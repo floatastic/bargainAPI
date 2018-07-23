@@ -2,8 +2,12 @@ package persistence
 
 import entities._
 import java.util.UUID
+import scalaz._
+import Scalaz._
+import api.InputValidator
+import api.InputValidator._
 
-class MemStorage extends AuctionService {
+class MemStorage extends AuctionService with InputValidator {
   private var auctions = Seq(
     Auction("4ac772c5-bc52-4d3c-ba9e-4010f511e175", "First"),
     Auction("0ae024c0-0ddb-4e59-9e2c-721a27c386f6", "Second"),
@@ -25,16 +29,21 @@ class MemStorage extends AuctionService {
 
   override def getAuction(id: AuctionId): Option[Auction] = auctions.find( _.id == id)
 
-  override def addLot(auctionId: AuctionId, data: LotData): Option[LotId] = {
-    getAuction(auctionId) match {
-      case Some(auction) => {
-        val newId = UUID.randomUUID.toString
-        val lot = Lot(newId, auction.id, data)
-        lots :+= lot
-        Option(newId)
-      }
-      case _ => None
+  override def addLot(auctionId: AuctionId, data: LotData): VNel[LotId] = {
+    (
+      validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
+      getAuction(auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
+      validData(data).toSuccessNel(lotDataErrorMsg)
+    ) {
+      (_, _, _) => createLot(auctionId, data)
     }
+  }
+
+  private def createLot(auctionId: AuctionId, data: LotData): LotId = {
+    val newId = UUID.randomUUID.toString
+    val lot = Lot(newId, auctionId, data)
+    lots :+= lot
+    newId
   }
 
   override def getLots(auctionId: AuctionId, maybeLimit: Option[Int], maybeOffset: Option[Int]): LimitedResult[Lot] = {

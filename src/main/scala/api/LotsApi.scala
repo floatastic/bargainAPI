@@ -2,13 +2,16 @@ package api
 
 import java.util.UUID
 
+import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller, ToResponseMarshaller}
+import akka.http.scaladsl.model.{HttpResponse, MessageEntity, ResponseEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import api.InputValidator.VNel
 import api.LotsApi.{LimitedResultRequest, PostInput}
-import entities.{AuctionId, LotData}
+import entities.{AuctionId, LotData, LotId}
 import mappings.JsonMappings
-
-import scala.util.Try
+import scalaz._
+import Scalaz._
 
 object LotsApi {
   case class PostInput(auctionId: AuctionId, lotData: LotData)
@@ -31,15 +34,21 @@ object LotsApi {
 
 trait LotsApi extends BaseApi with JsonMappings with InputValidator {
 
+  implicit def vnelPostLotMarshaller: ToResponseMarshaller[VNel[LotId]] = Marshaller.opaque { result =>
+    result match {
+      case Success(value) =>
+        HttpResponse(entity = value)
+      case Failure(errors) => {
+        ErrorResponse.validationFailed(errors.toList)
+      }
+    }
+  }
+
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {
       post {
         entity(as[PostInput]) { (input: PostInput) =>
-
-          validDataOrErrorResponse(input)(validatePostLotsInput) { postData =>
-            complete(service.addLot(postData.auctionId, postData.lotData))
-          }
-
+          complete(service.addLot(input.auctionId, input.lotData))
         }
       } ~
       parameters('auctionId, 'limit.as[Int].?, 'offset.as[Int].?).as(LimitedResultRequest[AuctionId]) { input =>

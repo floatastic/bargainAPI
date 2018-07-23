@@ -4,10 +4,8 @@ import java.util.UUID
 
 import scalaz._
 import Scalaz._
-import api.AuctionsApi.PostInput
-import api.LotsApi.{LimitedResultRequest, PostInput}
+import api.LotsApi.{LimitedResultRequest}
 import entities.AuctionId
-import persistence.AuctionService
 
 import scala.util.Try
 
@@ -27,8 +25,6 @@ trait InputValidator {
 
   import InputValidator._
 
-  implicit val service: AuctionService
-
   def validUUIDString(uuid: String): Option[String] = Try(UUID.fromString(uuid).toString).toOption
 
   def validData(data: String): Option[String] = if (data.trim.length > 0) Some(data) else None
@@ -38,16 +34,6 @@ trait InputValidator {
       validUUIDString(input.resourceId).toSuccessNel(auctionIdErrorMsg)
     ) {
       _ => input
-    }
-  }
-
-  def validatePostLotsInput(input: LotsApi.PostInput): VNel[LotsApi.PostInput] = {
-    (
-      validUUIDString(input.auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-      service.getAuction(input.auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
-      validData(input.lotData).toSuccessNel(lotDataErrorMsg)
-    ) {
-      (_, _, _) => input
     }
   }
 
