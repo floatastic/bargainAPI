@@ -2,10 +2,11 @@ package persistence
 
 import entities._
 import java.util.UUID
+
 import scalaz._
 import Scalaz._
 import api.InputValidator
-import api.InputValidator._
+import api.InputValidator.{VNel, _}
 
 class MemStorage extends AuctionService with InputValidator {
   private var auctions = Seq(
@@ -37,20 +38,26 @@ class MemStorage extends AuctionService with InputValidator {
 
   override def getAuction(id: AuctionId): Option[Auction] = auctions.find( _.id == id)
 
-  override def addLot(auctionId: AuctionId, data: LotData): VNel[LotId] = {
-    def _addLot(auctionId: AuctionId, data: LotData): LotId = {
-      val newId = UUID.randomUUID.toString
-      val lot = Lot(newId, auctionId, data)
-      lots :+= lot
-      newId
-    }
-
+  def newLot(auctionId: AuctionId, data: LotData): VNel[Lot] = {
     (
       validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-      getAuction(auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
-      validData(data).toSuccessNel(lotDataErrorMsg)
-    ) {
-      (_, _, _) => _addLot(auctionId, data)
+        getAuction(auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
+        validData(data).toSuccessNel(lotDataErrorMsg)
+      ) {
+      (_, _, _) => {
+        val newId = UUID.randomUUID.toString
+        Lot(newId, auctionId, data)
+      }
+    }
+  }
+
+  override def addLot(auctionId: AuctionId, data: LotData): VNel[LotId] = {
+    newLot(auctionId, data) match {
+      case Success(lot) => {
+        lots :+= lot
+        Success(lot.id)
+      }
+      case Failure(errors) => Failure(errors)
     }
   }
 
