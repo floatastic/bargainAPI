@@ -112,11 +112,24 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         status shouldEqual StatusCodes.BadRequest
 
         val errors = responseAs[ErrorResponseMessage]._embedded
-        errors.length shouldBe 3
+        errors.length shouldBe 2
 
         errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
-        errors(1).message shouldEqual "Invalid auction Id. Auction does not exist."
-        errors(2).message shouldEqual "Lot data cannot be empty."
+        errors(1).message shouldEqual "Lot data cannot be empty."
+      }
+    }
+
+    "return 400 with error given not existing auction UUID" in {
+      val entity = HttpEntity(MediaTypes.`application/json`,
+        "{\"auctionId\": \"111772c5-bc52-4d3c-ba9e-4010f511e175\", \"lotData\": \"test\"}")
+
+      Post("/lots").withEntity(entity) ~> lotsApi ~> check {
+        status shouldEqual StatusCodes.BadRequest
+
+        val errors = responseAs[ErrorResponseMessage]._embedded
+        errors.length shouldBe 1
+
+        errors(0).message shouldEqual "Invalid auction Id. Auction does not exist."
       }
     }
   }

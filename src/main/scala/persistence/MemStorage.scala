@@ -23,7 +23,7 @@ class MemStorage extends AuctionService with InputValidator {
 
   override def createAuction(data: AuctionData): VNel[AuctionId] = {
     def _createAuction(data: String): AuctionId = {
-      val newId = UUID.randomUUID.toString
+      val newId = newUUIDString
       val auction = Auction(newId, data)
       auctions :+= auction
       newId
@@ -36,17 +36,15 @@ class MemStorage extends AuctionService with InputValidator {
     }
   }
 
-  override def getAuction(id: AuctionId): Option[Auction] = auctions.find( _.id == id)
+  override def getAuction(id: AuctionId): VNel[Auction] = auctions.find( _.id == id).toSuccessNel(auctionNotFoundErrorMsg)
 
   def newLot(auctionId: AuctionId, data: LotData): VNel[Lot] = {
     (
-      validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-        getAuction(auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
+      (validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) andThen getAuction) |@|
         validData(data).toSuccessNel(lotDataErrorMsg)
       ) {
-      (_, _, _) => {
-        val newId = UUID.randomUUID.toString
-        Lot(newId, auctionId, data)
+      (_, _) => {
+        Lot(newUUIDString, auctionId, data)
       }
     }
   }
@@ -70,6 +68,7 @@ class MemStorage extends AuctionService with InputValidator {
     LimitedResult(auctionLotsSlice, limit, offset, auctionLots.length)
   }
 
+  private def newUUIDString: String = UUID.randomUUID.toString
 }
 
 object MemStorage {

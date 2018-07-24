@@ -24,7 +24,7 @@ trait BaseApi extends ServiceHolder with JsonMappings {
 
   def findAuctionOrNotFound(id: AuctionId)(auctionTransformer: Auction => StandardRoute): StandardRoute = {
     service.getAuction(id) match {
-      case Some(auction) => auctionTransformer(auction)
+      case Success(auction) => auctionTransformer(auction)
       case _ => complete(StatusCodes.NotFound)
     }
   }
