@@ -24,16 +24,6 @@ object AuctionsApi {
 
 trait AuctionsApi extends JsonMappings with ServiceHolder with BaseApi with InputValidator {
 
-  implicit def vnelAuctionIdMarshaller: ToResponseMarshaller[VNel[AuctionId]] = Marshaller.opaque { result =>
-    result match {
-      case Success(value) =>
-        HttpResponse(entity = value)
-      case Failure(errors) => {
-        ErrorResponse.validationFailed(errors.toList)
-      }
-    }
-  }
-
   val auctionsApi: Route = pathPrefix("auctions") {
     pathEnd {
       post {

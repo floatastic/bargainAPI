@@ -36,16 +36,6 @@ object LotsApi {
 
 trait LotsApi extends BaseApi with JsonMappings with InputValidator {
 
-  implicit def vnelLotIdMarshaller: ToResponseMarshaller[VNel[LotId]] = Marshaller.opaque { result =>
-    result match {
-      case Success(value) =>
-        HttpResponse(entity = value)
-      case Failure(errors) => {
-        ErrorResponse.validationFailed(errors.toList)
-      }
-    }
-  }
-
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {
       post {
