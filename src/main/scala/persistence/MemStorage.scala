@@ -20,30 +20,38 @@ class MemStorage extends AuctionService with InputValidator {
     Lot("2e5faabf-47eb-40c1-a961-b1ca7e928b49", "4ac772c5-bc52-4d3c-ba9e-4010f511e175", "Lot 3 for auction 1")
   )
 
-  override def createAuction(data: AuctionData): AuctionId = {
-    val newId = UUID.randomUUID.toString
-    val auction = Auction(newId, data)
-    auctions :+= auction
-    newId
+  override def createAuction(data: AuctionData): VNel[AuctionId] = {
+    def _createAuction(data: String): AuctionId = {
+      val newId = UUID.randomUUID.toString
+      val auction = Auction(newId, data)
+      auctions :+= auction
+      newId
+    }
+
+    Apply[VNel].apply(
+      validData(data).toSuccessNel(auctionDataErrorMsg)
+    ) {
+      _ => _createAuction(data)
+    }
   }
 
   override def getAuction(id: AuctionId): Option[Auction] = auctions.find( _.id == id)
 
   override def addLot(auctionId: AuctionId, data: LotData): VNel[LotId] = {
+    def _addLot(auctionId: AuctionId, data: LotData): LotId = {
+      val newId = UUID.randomUUID.toString
+      val lot = Lot(newId, auctionId, data)
+      lots :+= lot
+      newId
+    }
+
     (
       validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
       getAuction(auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
       validData(data).toSuccessNel(lotDataErrorMsg)
     ) {
-      (_, _, _) => createLot(auctionId, data)
+      (_, _, _) => _addLot(auctionId, data)
     }
-  }
-
-  private def createLot(auctionId: AuctionId, data: LotData): LotId = {
-    val newId = UUID.randomUUID.toString
-    val lot = Lot(newId, auctionId, data)
-    lots :+= lot
-    newId
   }
 
   override def getLots(auctionId: AuctionId, maybeLimit: Option[Int], maybeOffset: Option[Int]): LimitedResult[Lot] = {

@@ -6,7 +6,7 @@ import entities._
 case class LimitedResult[T](items: Seq[T], limit: Int, offset: Int, total: Int)
 
 trait AuctionService {
-  def createAuction(data: AuctionData): AuctionId
+  def createAuction(data: AuctionData): VNel[AuctionId]
 
   def getAuction(id: AuctionId): Option[Auction]
 

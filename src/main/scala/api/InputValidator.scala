@@ -36,12 +36,4 @@ trait InputValidator {
       _ => input
     }
   }
-
-  def validatePostAuctionInput(input: AuctionsApi.PostInput): VNel[AuctionsApi.PostInput] = {
-    Apply[VNel].apply(
-      validData(input.data).toSuccessNel(auctionDataErrorMsg)
-    ) {
-      _ => input
-    }
-  }
 }

@@ -2,8 +2,8 @@ package api
 
 import java.util.UUID
 
-import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller, ToResponseMarshaller}
-import akka.http.scaladsl.model.{HttpResponse, MessageEntity, ResponseEntity}
+import akka.http.scaladsl.marshalling.{ToResponseMarshaller, _}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MessageEntity, ResponseEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import api.InputValidator.VNel
@@ -12,6 +12,8 @@ import entities.{AuctionId, LotData, LotId}
 import mappings.JsonMappings
 import scalaz._
 import Scalaz._
+import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
+import spray.json.RootJsonFormat
 
 object LotsApi {
   case class PostInput(auctionId: AuctionId, lotData: LotData)
@@ -34,7 +36,7 @@ object LotsApi {
 
 trait LotsApi extends BaseApi with JsonMappings with InputValidator {
 
-  implicit def vnelPostLotMarshaller: ToResponseMarshaller[VNel[LotId]] = Marshaller.opaque { result =>
+  implicit def vnelLotIdMarshaller: ToResponseMarshaller[VNel[LotId]] = Marshaller.opaque { result =>
     result match {
       case Success(value) =>
         HttpResponse(entity = value)
