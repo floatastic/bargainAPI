@@ -1,19 +1,10 @@
 package api
 
-import java.util.UUID
-
-import akka.http.scaladsl.marshalling.{ToResponseMarshaller, _}
-import akka.http.scaladsl.model.{HttpEntity, HttpResponse, MessageEntity, ResponseEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import api.InputValidator.VNel
 import api.LotsApi.{LimitedResultRequest, PostInput}
-import entities.{AuctionId, LotData, LotId}
+import entities.{AuctionId, LotData}
 import mappings.JsonMappings
-import scalaz._
-import Scalaz._
-import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
-import spray.json.RootJsonFormat
 
 object LotsApi {
   case class PostInput(auctionId: AuctionId, lotData: LotData)

@@ -12,7 +12,7 @@ import mappings.JsonMappings
 
 trait BaseApi extends ServiceHolder with JsonMappings {
 
-  implicit def vnelAuctionIdMarshaller: ToResponseMarshaller[VNel[String]] = Marshaller.opaque { result =>
+  implicit def vnelStringMarshaller: ToResponseMarshaller[VNel[String]] = Marshaller.opaque { result =>
     result match {
       case Success(value) =>
         HttpResponse(entity = value)
