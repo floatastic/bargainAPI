@@ -19,19 +19,25 @@ object InputValidator {
   val lotDataErrorMsg = "Lot data cannot be empty."
   val limitErrorMsg = "Limit should be a value between 0 and 100 (right inclusive)."
   val offsetErrorMsg = "Offset should be a value greater than 0."
+
+  val defaultUUIDErrorMsg = "Invalid UUID string."
+  val defaultDataErrorMsg = "Data cannot be empty."
 }
 
 trait InputValidator {
 
   import InputValidator._
 
-  def validUUIDString(uuid: String): Option[String] = Try(UUID.fromString(uuid).toString).toOption
+  def uuid(stringUUID: String, errorMessage: String = defaultUUIDErrorMsg): VNel[UUID] = Try(UUID.fromString(stringUUID)).toOption.toSuccessNel(errorMessage)
 
-  def validData(data: String): Option[String] = if (data.trim.length > 0) Some(data) else None
+  def validData(data: String, errorMessage: String = defaultDataErrorMsg): VNel[String] = {
+    val maybeData = if (data.trim.length > 0) Some(data) else None
+    maybeData.toSuccessNel(errorMessage)
+  }
 
   def validateGetLotsInput(input: LotsApi.LimitedResultRequest[AuctionId]): VNel[LimitedResultRequest[AuctionId]] = {
     Apply[VNel].apply(
-      validUUIDString(input.resourceId).toSuccessNel(auctionIdErrorMsg)
+      uuid(input.resourceId, auctionIdErrorMsg)
     ) {
       _ => input
     }
