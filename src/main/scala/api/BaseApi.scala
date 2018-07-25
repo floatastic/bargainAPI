@@ -1,26 +1,34 @@
 package api
 
+import akka.http.scaladsl.marshalling.{Marshaller, Marshalling, ToEntityMarshaller, ToResponseMarshaller}
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.StandardRoute
-import api.InputValidator.VNel
+import api.InputValidator.{ErrorMsg, VNel}
 import entities.{Auction, AuctionId, LotId}
+import mappings.JsonMappings
+import scala.concurrent.Future
 import scalaz._
 import Scalaz._
-import akka.http.scaladsl.marshalling.{Marshaller, ToResponseMarshaller}
-import mappings.JsonMappings
 
 trait BaseApi extends ServiceHolder with JsonMappings {
 
-  implicit def vnelStringMarshaller: ToResponseMarshaller[VNel[String]] = Marshaller.opaque { result =>
-    result match {
-      case Success(value) =>
-        HttpResponse(entity = value)
-      case Failure(errors) => {
-        ErrorResponse.validationFailed(errors.toList)
+  def errorsListMarshaller: ToResponseMarshaller[NonEmptyList[ErrorMsg]] =
+    Marshaller { _ =>
+      errors => Future.successful { List(Marshalling.Opaque(() => ErrorResponse.validationFailed(errors.toList))) }
+    }
+
+  implicit def vnelResponseMarshaller[A](implicit m: ToEntityMarshaller[A]): ToResponseMarshaller[VNel[A]] = 
+    Marshaller { implicit ec =>
+      {
+        case Success(value) => 
+          m(value) map { marshallings =>
+            marshallings map (_ map (HttpResponse(OK, Nil, _)))
+          }
+        case Failure(errors) => errorsListMarshaller(errors)
       }
     }
-  }
 
   def findAuctionOrNotFound(id: AuctionId)(auctionTransformer: Auction => StandardRoute): StandardRoute = {
     service.getAuction(id) match {
