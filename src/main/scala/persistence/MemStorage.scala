@@ -39,12 +39,9 @@ class MemStorage extends AuctionService with InputValidator {
   override def getAuction(id: AuctionId): VNel[Auction] = auctions.find( _.id == id).toSuccessNel(auctionNotFoundErrorMsg)
 
   override def addLot(auctionId: AuctionId, data: LotData): VNel[LotId] = {
-    newLot(auctionId, data) match {
-      case Success(lot) => {
-        lots :+= lot
-        Success(lot.id)
-      }
-      case Failure(errors) => Failure(errors)
+    newLot(auctionId, data) map { lot =>
+      lots :+= lot
+      lot.id
     }
   }
 
@@ -59,13 +56,10 @@ class MemStorage extends AuctionService with InputValidator {
 
   private def newUUIDString: String = UUID.randomUUID.toString
 
-  private def newLot(auctionId: AuctionId, data: LotData): VNel[Lot] = {
-    ((uuid(auctionId, auctionIdErrorMsg) andThen findAuction) |@| validData(data, lotDataErrorMsg)) {
-      (_, _) => {
-        Lot(newUUIDString, auctionId, data)
-      }
+  private def newLot(auctionId: AuctionId, data: LotData): VNel[Lot] =
+    ((uuid(auctionId, auctionIdErrorMsg) andThen findAuction) |@| validData(data, lotDataErrorMsg)) { (_, _) =>
+      Lot(newUUIDString, auctionId, data)
     }
-  }
 
   private def findAuction(uuid: UUID): VNel[Auction] = {
     val stringUUID = uuid.toString
