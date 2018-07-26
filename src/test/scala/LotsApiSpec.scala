@@ -8,7 +8,7 @@ import api.ResponseUnmarshaller
 import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
 import persistence.LimitedResult
-
+import extensions.StringExtensions._
 import scala.util.Try
 
 class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {
@@ -67,7 +67,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         limitedResult.total shouldEqual 3
         limitedResult.items.length shouldEqual 1
 
-        limitedResult.items.head.id shouldEqual "2e5faabf-47eb-40c1-a961-b1ca7e928b49"
+        limitedResult.items.head.id shouldEqual "2e5faabf-47eb-40c1-a961-b1ca7e928b49".uuid
       }
     }
 
@@ -77,12 +77,10 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       }
     }
 
-    "return a 400 with error given bad format of UUID" in {
+    "return a 405 with error given bad format of UUID" in {
       Get("/lots?auctionId=4ac772c5-bc52-4d3c") ~> sealedLotsApi ~> check {
-        status shouldEqual StatusCodes.BadRequest
-
-        val errors = responseAs[ErrorResponseMessage]._embedded
-        errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
+        status shouldEqual StatusCodes.MethodNotAllowed
+        //TODO: are we OK with text/plain 405 error response?
       }
     }
 
@@ -108,14 +106,10 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       val entity = HttpEntity(MediaTypes.`application/json`,
         "{\"auctionId\": \"721a27c386f6\", \"lotData\": \"    \"}")
 
-      Post("/lots").withEntity(entity) ~> lotsApi ~> check {
+      Post("/lots").withEntity(entity) ~> sealedLotsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ErrorResponseMessage]._embedded
-        errors.length shouldBe 2
-
-        errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
-        errors(1).message shouldEqual "Lot data cannot be empty."
+        //TODO: are we OK with text/plain 400 error response?
       }
     }
 
