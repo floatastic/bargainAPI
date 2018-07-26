@@ -1,16 +1,18 @@
 package persistence
 
+import java.util.UUID
+
 import api.InputValidator.VNel
 import entities._
 
 case class LimitedResult[T](items: Seq[T], limit: Int, offset: Int, total: Int)
 
 trait AuctionService {
-  def createAuction(data: AuctionData): VNel[AuctionId]
+  def createAuction(data: AuctionData): VNel[UUID]
 
-  def getAuction(id: AuctionId): VNel[Auction]
+  def getAuction(id: UUID): VNel[Auction]
 
-  def addLot(auctionId: AuctionId, data: LotData): VNel[LotId]
+  def addLot(auctionId: UUID, data: LotData): VNel[UUID]
 
-  def getLots(auctionId: AuctionId, limit: Option[Int], offset: Option[Int]): LimitedResult[Lot]
+  def getLots(auctionId: UUID, limit: Option[Int], offset: Option[Int]): LimitedResult[Lot]
 }

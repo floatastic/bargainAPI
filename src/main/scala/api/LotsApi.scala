@@ -1,13 +1,19 @@
 package api
 
+import java.util.UUID
+
+import akka.http.javadsl.unmarshalling.StringUnmarshaller
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.unmarshalling.Unmarshaller
 import api.LotsApi.{LimitedResultRequest, PostInput}
-import entities.{AuctionId, LotData}
+import entities.LotData
 import mappings.JsonMappings
 
+import scala.util.{Success, Try}
+
 object LotsApi {
-  case class PostInput(auctionId: AuctionId, lotData: LotData)
+  case class PostInput(auctionId: UUID, lotData: LotData)
 
   case class LimitedResultRequest[T](resourceId: T, limit: Option[Int], offset: Option[Int]) {
     require(
@@ -34,12 +40,10 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator {
           complete(service.addLot(input.auctionId, input.lotData))
         }
       } ~
-      parameters('auctionId, 'limit.as[Int].?, 'offset.as[Int].?).as(LimitedResultRequest[AuctionId]) { input =>
+      parameters('auctionId.as[UUID], 'limit.as[Int].?, 'offset.as[Int].?).as(LimitedResultRequest[UUID]) { input =>
 
-        validDataOrErrorResponse(input)(validateGetLotsInput) { input =>
-          findAuctionOrNotFound(input.resourceId) { auction =>
-            complete(service.getLots(auction.id, input.limit, input.offset))
-          }
+        findAuctionOrNotFound(input.resourceId) { auction =>
+          complete(service.getLots(auction.id, input.limit, input.offset))
         }
 
       }
