@@ -31,7 +31,7 @@ object LotsApi {
   }
 }
 
-trait LotsApi extends BaseApi with JsonMappings with InputValidator {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator with ServiceHolder {
 
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {

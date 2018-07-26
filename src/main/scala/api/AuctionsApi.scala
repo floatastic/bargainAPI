@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import api.AuctionsApi.{PostInput}
 import entities.{AuctionData}
+import db.dao.AuctionsDao
 import mappings.JsonMappings
 
 object AuctionsApi {

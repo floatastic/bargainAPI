@@ -18,8 +18,9 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller
 import spray.json.{DeserializationException}
 
 import scala.util.Try
+import db.dao.AuctionsDao
 
-trait BaseApi extends ServiceHolder with JsonMappings {
+trait BaseApi extends JsonMappings with AuctionsDao {
 
   implicit def uuidToEntityMarshaller: ToEntityMarshaller[UUID] = Marshaller.stringMarshaller(MediaTypes.`application/json`).compose( _.toString )
 
@@ -48,7 +49,7 @@ trait BaseApi extends ServiceHolder with JsonMappings {
   }
 
   def findAuctionOrNotFound(id: UUID)(auctionTransformer: Auction => StandardRoute): StandardRoute = {
-    service.getAuction(id) match {
+    getAuction(id) match {
       case Success(auction) => auctionTransformer(auction)
       case _ => complete(StatusCodes.NotFound)
     }

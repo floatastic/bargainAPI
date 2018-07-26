@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import entities._
 import persistence.LimitedResult
-import spray.json.{DefaultJsonProtocol, DeserializationException, JsString, JsValue, JsonFormat}
+import spray.json.{DefaultJsonProtocol, JsString, DeserializationException, JsValue, JsonFormat}
 import api.AuctionsApi
 import api.ErrorResponse.{ErrorMessage, ErrorResponseMessage}
 import api.LotsApi
