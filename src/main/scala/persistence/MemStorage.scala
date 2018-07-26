@@ -2,10 +2,11 @@ package persistence
 
 import entities._
 import java.util.UUID
+
 import scalaz._
 import Scalaz._
 import api.InputValidator
-import api.InputValidator._
+import api.InputValidator.{VNel, _}
 
 class MemStorage extends AuctionService with InputValidator {
   private var auctions = Seq(
@@ -22,35 +23,25 @@ class MemStorage extends AuctionService with InputValidator {
 
   override def createAuction(data: AuctionData): VNel[AuctionId] = {
     def _createAuction(data: String): AuctionId = {
-      val newId = UUID.randomUUID.toString
+      val newId = newUUIDString
       val auction = Auction(newId, data)
       auctions :+= auction
       newId
     }
 
     Apply[VNel].apply(
-      validData(data).toSuccessNel(auctionDataErrorMsg)
+      validData(data, auctionDataErrorMsg)
     ) {
       _ => _createAuction(data)
     }
   }
 
-  override def getAuction(id: AuctionId): Option[Auction] = auctions.find( _.id == id)
+  override def getAuction(id: AuctionId): VNel[Auction] = auctions.find( _.id == id).toSuccessNel(auctionNotFoundErrorMsg)
 
   override def addLot(auctionId: AuctionId, data: LotData): VNel[LotId] = {
-    def _addLot(auctionId: AuctionId, data: LotData): LotId = {
-      val newId = UUID.randomUUID.toString
-      val lot = Lot(newId, auctionId, data)
+    newLot(auctionId, data) map { lot =>
       lots :+= lot
-      newId
-    }
-
-    (
-      validUUIDString(auctionId).toSuccessNel(auctionIdErrorMsg) |@|
-      getAuction(auctionId).toSuccessNel(auctionNotFoundErrorMsg) |@|
-      validData(data).toSuccessNel(lotDataErrorMsg)
-    ) {
-      (_, _, _) => _addLot(auctionId, data)
+      lot.id
     }
   }
 
@@ -61,6 +52,18 @@ class MemStorage extends AuctionService with InputValidator {
     val auctionLots = lots.filter( _.auctionId == auctionId)
     val auctionLotsSlice = auctionLots.slice(offset, offset + limit)
     LimitedResult(auctionLotsSlice, limit, offset, auctionLots.length)
+  }
+
+  private def newUUIDString: String = UUID.randomUUID.toString
+
+  private def newLot(auctionId: AuctionId, data: LotData): VNel[Lot] =
+    ((uuid(auctionId, auctionIdErrorMsg) andThen findAuction) |@| validData(data, lotDataErrorMsg)) { (_, _) =>
+      Lot(newUUIDString, auctionId, data)
+    }
+
+  private def findAuction(uuid: UUID): VNel[Auction] = {
+    val stringUUID = uuid.toString
+    auctions.find( _.id == stringUUID).toSuccessNel(auctionNotFoundErrorMsg)
   }
 
 }
