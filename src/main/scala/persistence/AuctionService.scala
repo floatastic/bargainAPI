@@ -8,9 +8,9 @@ import entities._
 case class LimitedResult[T](items: Seq[T], limit: Int, offset: Int, total: Int)
 
 trait AuctionService {
-  def createAuction(data: AuctionData): VNel[UUID]
-
-  def getAuction(id: UUID): VNel[Auction]
+//  def createAuction(data: AuctionData): VNel[UUID]
+//
+//  def getAuction(id: UUID): VNel[Auction]
 
   def addLot(auctionId: UUID, data: LotData): VNel[UUID]
 

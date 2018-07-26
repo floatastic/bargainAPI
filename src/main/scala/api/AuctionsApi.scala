@@ -14,13 +14,13 @@ object AuctionsApi {
   case class PostInput(data: AuctionData)
 }
 
-trait AuctionsApi extends JsonMappings with ServiceHolder with BaseApi with InputValidator {
+trait AuctionsApi extends JsonMappings with AuctionsDao with BaseApi with InputValidator {
 
   val auctionsApi: Route = pathPrefix("auctions") {
     pathEnd {
       post {
         entity(as[PostInput]) { (input: PostInput) =>
-            complete(service.createAuction(input.data))
+            complete(createAuction(input.data))
         }
       }
     } ~
