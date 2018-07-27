@@ -4,6 +4,9 @@ version := "0.1"
 
 scalaVersion := "2.12.6"
 
+fork in (Test) := true
+javaOptions in Test += "-Dconfig.file=src/main/resources/application.test.conf"
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % "10.0.10",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.10",

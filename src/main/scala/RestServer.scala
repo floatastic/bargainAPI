@@ -15,7 +15,7 @@ object RestServer extends App with Config with Routes with Migrator {
   implicit val executionContext = system.dispatcher
   protected val log: LoggingAdapter = Logging(system, getClass)
 
-  migrate
+  migrateUp
 
   val bindingFuture = Http().bindAndHandle(handler = logRequestResult("log")(routes), interface = httpInterface, port = httpPort)
 

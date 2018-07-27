@@ -7,7 +7,7 @@ trait Migrator extends Config {
   private val flyway = new Flyway()
   flyway.setDataSource(databaseUrl, databaseUser, databasePassword)
 
-  def migrate = flyway.migrate()
+  def migrateUp = flyway.migrate()
 
-  def rollback = flyway.clean()
+  def migrateDownAll = flyway.clean()
 }

@@ -5,13 +5,23 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import api.ErrorResponse.ErrorResponseMessage
 import api.ResponseUnmarshaller
+import db.Migrator
 import entities.Auction
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
 import extensions.StringExtensions._
 
 import scala.util.Try
 
-class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {
+class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with Migrator with BeforeAndAfterAll {
+
+  override def beforeAll() {
+    migrateUp
+    //potential add data
+  }
+
+  override def afterAll() {
+    //potencial clean data
+  }
 
   val sealedAuctionsApi = Route.seal(auctionsApi)
 
