@@ -7,20 +7,34 @@ import api.ErrorResponse.ErrorResponseMessage
 import api.ResponseUnmarshaller
 import db.Migrator
 import entities.Auction
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Matchers, WordSpec}
 import extensions.StringExtensions._
+import helpers.TestData
 
 import scala.util.Try
 
-class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with Migrator with BeforeAndAfterAll {
+class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with Migrator with TestData with BeforeAndAfterEach with BeforeAndAfterAll {
 
   override def beforeAll() {
+    super.beforeAll
     migrateUp
-    //potential add data
+    insertTestData
   }
 
   override def afterAll() {
-    //potencial clean data
+    ensureTransaction(false)
+    dropAllData
+    super.afterAll
+  }
+
+  override def beforeEach = {
+    super.beforeEach
+    ensureTransaction(true)
+  }
+
+  override def afterEach: Unit = {
+    rollback
+    super.afterEach
   }
 
   val sealedAuctionsApi = Route.seal(auctionsApi)

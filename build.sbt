@@ -13,7 +13,7 @@ libraryDependencies ++= Seq(
   "org.scalaz" %% "scalaz-core" % "7.2.25",
   "org.postgresql" % "postgresql" % "9.3-1100-jdbc4",
   "com.typesafe.slick" %% "slick" % "2.1.0",
-  "org.flywaydb" % "flyway-core" % "3.2.1"
+  "org.flywaydb" % "flyway-core" % "5.1.4"
 )
 
 libraryDependencies ++= Seq(
