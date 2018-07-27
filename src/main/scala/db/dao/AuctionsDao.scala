@@ -12,13 +12,12 @@ import scala.slick.lifted.Tag
 import scala.slick.driver.PostgresDriver.simple._
 
 class AuctionsTable(tag: Tag) extends Table[Auction](tag, "auctions"){
-  def id = column[UUID]("id", O.PrimaryKey)//, O.DBType("UUID"))
-  def data = column[String]("data")
+  def id = column[UUID]("id", O.PrimaryKey)
+  def data = column[String]("data", O.NotNull)
   def * = (id, data) <> ((Auction.apply _).tupled, Auction.unapply)
 }
 
-trait AuctionsDao extends db.Database with InputValidator {
-  private val auctionsTable = TableQuery[AuctionsTable]
+trait AuctionsDao extends BaseDao with InputValidator {
 
   def getAuction(id: UUID): VNel[Auction] =
     auctionsTable
@@ -47,6 +46,4 @@ trait AuctionsDao extends db.Database with InputValidator {
 
     maybeUuid.toSuccessNel(s"Unable to insert auction, id: ${auction.id}")
   }
-
-  private def newUUID = UUID.randomUUID
 }

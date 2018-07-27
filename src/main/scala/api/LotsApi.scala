@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import api.LotsApi.{LimitedResultRequest, PostInput}
+import db.dao.LotsDao
 import entities.LotData
 import mappings.JsonMappings
 
@@ -31,13 +32,13 @@ object LotsApi {
   }
 }
 
-trait LotsApi extends BaseApi with JsonMappings with InputValidator with ServiceHolder {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator with ServiceHolder with LotsDao {
 
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {
       post {
         entity(as[PostInput]) { (input: PostInput) =>
-          complete(service.addLot(input.auctionId, input.lotData))
+          complete(addLot(input.auctionId, input.lotData))
         }
       } ~
       parameters('auctionId.as[UUID], 'limit.as[Int].?, 'offset.as[Int].?).as(LimitedResultRequest[UUID]) { input =>

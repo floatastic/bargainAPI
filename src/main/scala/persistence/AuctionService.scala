@@ -12,7 +12,7 @@ trait AuctionService {
 //
 //  def getAuction(id: UUID): VNel[Auction]
 
-  def addLot(auctionId: UUID, data: LotData): VNel[UUID]
+//  def addLot(auctionId: UUID, data: LotData): VNel[UUID]
 
   def getLots(auctionId: UUID, limit: Option[Int], offset: Option[Int]): LimitedResult[Lot]
 }

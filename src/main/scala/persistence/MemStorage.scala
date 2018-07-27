@@ -22,13 +22,6 @@ class MemStorage extends AuctionService with InputValidator {
     Lot("2e5faabf-47eb-40c1-a961-b1ca7e928b49".uuid, "4ac772c5-bc52-4d3c-ba9e-4010f511e175".uuid, "Lot 3 for auction 1")
   )
 
-  override def addLot(auctionId: UUID, data: LotData): VNel[UUID] = {
-    newLot(auctionId, data) map { lot =>
-      lots :+= lot
-      lot.id
-    }
-  }
-
   override def getLots(auctionId: UUID, maybeLimit: Option[Int], maybeOffset: Option[Int]): LimitedResult[Lot] = {
     val limit = maybeLimit.getOrElse(10)
     val offset = maybeOffset.getOrElse(0)
@@ -39,13 +32,6 @@ class MemStorage extends AuctionService with InputValidator {
   }
 
   def getAuction(id: UUID): VNel[Auction] = auctions.find( _.id.equals(id) ).toSuccessNel(auctionNotFoundErrorMsg)
-
-  private def newUUID: UUID = UUID.randomUUID
-
-  private def newLot(auctionId: UUID, data: LotData): VNel[Lot] =
-    (getAuction(auctionId) |@| validData(data, lotDataErrorMsg)) { (_, _) =>
-      Lot(newUUID, auctionId, data)
-    }
 }
 
 object MemStorage {

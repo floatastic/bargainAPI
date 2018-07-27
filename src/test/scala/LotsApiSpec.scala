@@ -15,6 +15,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
 
   implicit val limResLotUm = jsonFormat4(LimitedResult[Lot])
 
+  val uuidRegex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
   val sealedLotsApi = Route.seal(lotsApi)
 
   "Lots Api" should {
@@ -123,7 +124,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         val errors = responseAs[ErrorResponseMessage]._embedded
         errors.length shouldBe 1
 
-        errors(0).message shouldEqual "Invalid auction Id. Auction does not exist."
+        errors(0).message should (fullyMatch regex (s"Unable to insert lot, id: $uuidRegex"))
       }
     }
   }
