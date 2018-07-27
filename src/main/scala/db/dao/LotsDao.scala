@@ -23,6 +23,18 @@ class LotsTable(tag: Tag) extends Table[Lot](tag, "lots"){
 
 trait LotsDao extends BaseDao with InputValidator {
 
+  def getLots(auctionId: UUID, maybeLimit: Option[Int], maybeOffset: Option[Int]): LimitedResult[Lot] = {
+    val limit = maybeLimit.getOrElse(10)
+    val offset = maybeOffset.getOrElse(0)
+
+    val baseQuery = lotsTable.filter( _.auctionId === auctionId)
+    val slicedQuery = baseQuery.drop(offset).take(limit)
+    val auctionLots = slicedQuery.run
+    val totalCount = baseQuery.length.run
+
+    LimitedResult(auctionLots, limit, offset, totalCount)
+  }
+
   def addLot(auctionId: UUID, data: LotData): VNel[UUID] = newLot(auctionId, data) andThen insertLot
 
   private def newLot(auctionId: UUID, data: LotData): VNel[Lot] =

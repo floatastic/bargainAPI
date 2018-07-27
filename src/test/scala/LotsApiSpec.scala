@@ -5,10 +5,11 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import api.ErrorResponse.ErrorResponseMessage
 import api.ResponseUnmarshaller
+import db.dao.LimitedResult
 import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
-import persistence.LimitedResult
 import extensions.StringExtensions._
+
 import scala.util.Try
 
 class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {

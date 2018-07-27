@@ -32,7 +32,7 @@ object LotsApi {
   }
 }
 
-trait LotsApi extends BaseApi with JsonMappings with InputValidator with ServiceHolder with LotsDao {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao {
 
   val lotsApi: Route = pathPrefix("lots") {
     pathEnd {
@@ -44,7 +44,7 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with Service
       parameters('auctionId.as[UUID], 'limit.as[Int].?, 'offset.as[Int].?).as(LimitedResultRequest[UUID]) { input =>
 
         findAuctionOrNotFound(input.resourceId) { auction =>
-          complete(service.getLots(auction.id, input.limit, input.offset))
+          complete(getLots(auction.id, input.limit, input.offset))
         }
 
       }
