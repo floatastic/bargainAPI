@@ -7,9 +7,8 @@ import api.ErrorResponse.ErrorResponseMessage
 import api.ResponseUnmarshaller
 import entities.Auction
 import org.scalatest.{Matchers, WordSpec}
-import extensions.StringExtensions._
 import helpers.{DbBeforeAfter}
-
+import extensions.Int2UUIDExtension._
 import scala.util.Try
 
 class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with DbBeforeAfter {
@@ -19,10 +18,10 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
   "Auctions Api" should {
 
     "return an auction given a valid auction id" in {
-      Get("/auctions/4ac772c5-bc52-4d3c-ba9e-4010f511e175") ~> auctionsApi ~> check {
+      Get("/auctions/00000000-0000-0000-0000-000000000001") ~> auctionsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
-        responseAs[Auction] shouldEqual Auction("4ac772c5-bc52-4d3c-ba9e-4010f511e175".asUUID, "First")
+        responseAs[Auction] shouldEqual Auction(1.asUUID, "First")
       }
     }
 

@@ -8,7 +8,7 @@ import api.ResponseUnmarshaller
 import db.dao.LimitedResult
 import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
-import extensions.StringExtensions._
+import extensions.Int2UUIDExtension._
 import helpers.DbBeforeAfter
 
 import scala.util.Try
@@ -25,7 +25,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     "return a created object id given valid POST data" in {
 
       val entity = HttpEntity(MediaTypes.`application/json`,
-        "{\"auctionId\": \"0ae024c0-0ddb-4e59-9e2c-721a27c386f6\", \"lotData\": \"Test lot\"}")
+        "{\"auctionId\": \"00000000-0000-0000-0000-000000000001\", \"lotData\": \"Test lot\"}")
 
       Post("/lots").withEntity(entity) ~> lotsApi ~> check {
         status shouldEqual StatusCodes.OK
@@ -43,7 +43,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     }
 
     "return a result with default limit and offset given a valid auction id" in {
-      Get("/lots?auctionId=4ac772c5-bc52-4d3c-ba9e-4010f511e175") ~> lotsApi ~> check {
+      Get("/lots?auctionId=00000000-0000-0000-0000-000000000001") ~> lotsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
 
@@ -58,7 +58,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     }
 
     "return a result with limit and offset given in a request" in {
-      Get("/lots?auctionId=4ac772c5-bc52-4d3c-ba9e-4010f511e175&limit=1&offset=2") ~> lotsApi ~> check {
+      Get("/lots?auctionId=00000000-0000-0000-0000-000000000001&limit=1&offset=2") ~> lotsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
 
@@ -70,7 +70,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         limitedResult.total shouldEqual 3
         limitedResult.items.length shouldEqual 1
 
-        limitedResult.items.head.id shouldEqual "2e5faabf-47eb-40c1-a961-b1ca7e928b49".asUUID
+        limitedResult.items.head.id shouldEqual 3.asUUID
       }
     }
 
