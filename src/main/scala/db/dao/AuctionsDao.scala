@@ -10,6 +10,7 @@ import Scalaz._
 
 import scala.slick.lifted.Tag
 import scala.slick.driver.PostgresDriver.simple._
+import scala.util.Try
 
 class AuctionsTable(tag: Tag) extends Table[Auction](tag, "auctions"){
   def id = column[UUID]("id", O.PrimaryKey)
@@ -36,14 +37,8 @@ trait AuctionsDao extends BaseDao with InputValidator {
     }
   }
 
-  def insertAuction(auction: Auction): VNel[UUID] = {
-    val insertResult = auctionsTable insert auction
-
-    val maybeUuid = insertResult match {
-      case 1 => Some(auction.id)
-      case _ => None
-    }
-
-    maybeUuid.toSuccessNel(s"Unable to insert auction, id: ${auction.id}")
-  }
+  def insertAuction(auction: Auction): VNel[UUID] =
+    Try(auctionsTable insert auction).toOption
+      .map( _ => auction.id)
+      .toSuccessNel(s"Unable to insert auction, id: ${auction.id}")
 }

@@ -44,6 +44,8 @@ trait LotsDao extends BaseDao with InputValidator {
         (_) => Lot(newUUID, auctionId, data)
     }
 
-  //TODO: Catch and forward db error? Should we use the same pattern for inserting auction?
-  private def insertLot(lot: Lot): VNel[UUID] = Try(lotsTable insert lot).toOption.map( _ => lot.id).toSuccessNel(s"Unable to insert lot, id: ${lot.id}")
+  private def insertLot(lot: Lot): VNel[UUID] =
+    Try(lotsTable insert lot).toOption
+      .map( _ => lot.id)
+      .toSuccessNel(s"Unable to insert lot, id: ${lot.id}")
 }
