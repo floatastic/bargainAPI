@@ -9,10 +9,11 @@ import db.dao.LimitedResult
 import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
 import extensions.StringExtensions._
+import helpers.DbBeforeAfter
 
 import scala.util.Try
 
-class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {
+class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with DbBeforeAfter {
 
   implicit val limResLotUm = jsonFormat4(LimitedResult[Lot])
 
