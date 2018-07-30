@@ -22,7 +22,7 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
       Get("/auctions/4ac772c5-bc52-4d3c-ba9e-4010f511e175") ~> auctionsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
-        responseAs[Auction] shouldEqual Auction("4ac772c5-bc52-4d3c-ba9e-4010f511e175".uuid, "First")
+        responseAs[Auction] shouldEqual Auction("4ac772c5-bc52-4d3c-ba9e-4010f511e175".asUUID, "First")
       }
     }
 

@@ -70,7 +70,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         limitedResult.total shouldEqual 3
         limitedResult.items.length shouldEqual 1
 
-        limitedResult.items.head.id shouldEqual "2e5faabf-47eb-40c1-a961-b1ca7e928b49".uuid
+        limitedResult.items.head.id shouldEqual "2e5faabf-47eb-40c1-a961-b1ca7e928b49".asUUID
       }
     }
 
