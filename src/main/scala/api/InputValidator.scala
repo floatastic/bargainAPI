@@ -1,12 +1,7 @@
 package api
 
-import java.util.UUID
-
 import scalaz._
 import Scalaz._
-import api.LotsApi.{LimitedResultRequest}
-
-import scala.util.Try
 
 object InputValidator {
   type ErrorMsg = String
