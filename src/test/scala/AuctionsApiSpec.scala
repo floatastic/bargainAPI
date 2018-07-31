@@ -7,20 +7,21 @@ import api.ErrorResponse.ErrorResponseMessage
 import api.ResponseUnmarshaller
 import entities.Auction
 import org.scalatest.{Matchers, WordSpec}
-
+import helpers.{DbBeforeAfter}
+import extensions.Int2UUIDExtension._
 import scala.util.Try
 
-class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {
+class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with DbBeforeAfter {
 
   val sealedAuctionsApi = Route.seal(auctionsApi)
 
   "Auctions Api" should {
 
     "return an auction given a valid auction id" in {
-      Get("/auctions/4ac772c5-bc52-4d3c-ba9e-4010f511e175") ~> auctionsApi ~> check {
+      Get("/auctions/00000000-0000-0000-0000-000000000001") ~> auctionsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
-        responseAs[Auction] shouldEqual Auction("4ac772c5-bc52-4d3c-ba9e-4010f511e175", "First")
+        responseAs[Auction] shouldEqual Auction(1.asUUID, "First")
       }
     }
 
@@ -30,14 +31,9 @@ class AuctionsApiSpec extends WordSpec with Matchers with ScalatestRouteTest wit
       }
     }
 
-    "return 400 with error given wrong format of ID" in {
-      Get("/auctions/55555555-bc52") ~> sealedAuctionsApi ~> check {
-        status shouldEqual StatusCodes.BadRequest
-
-        val errors = responseAs[ErrorResponseMessage]._embedded
-        errors.length shouldBe 1
-
-        errors(0).message shouldEqual "requirement failed: Invalid auction Id. Auction Id must have a UUID format."
+    "return 404 not found given wrong format of ID" in {
+      Get("/auctions/asd__-bc52") ~> sealedAuctionsApi ~> check {
+        status shouldEqual StatusCodes.NotFound
       }
     }
 

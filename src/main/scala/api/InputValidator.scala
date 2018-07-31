@@ -1,13 +1,7 @@
 package api
 
-import java.util.UUID
-
 import scalaz._
 import Scalaz._
-import api.LotsApi.{LimitedResultRequest}
-import entities.AuctionId
-
-import scala.util.Try
 
 object InputValidator {
   type ErrorMsg = String
@@ -28,18 +22,8 @@ trait InputValidator {
 
   import InputValidator._
 
-  def uuid(stringUUID: String, errorMessage: String = defaultUUIDErrorMsg): VNel[UUID] = Try(UUID.fromString(stringUUID)).toOption.toSuccessNel(errorMessage)
-
   def validData(data: String, errorMessage: String = defaultDataErrorMsg): VNel[String] = {
     val maybeData = if (data.trim.length > 0) Some(data) else None
     maybeData.toSuccessNel(errorMessage)
-  }
-
-  def validateGetLotsInput(input: LotsApi.LimitedResultRequest[AuctionId]): VNel[LimitedResultRequest[AuctionId]] = {
-    Apply[VNel].apply(
-      uuid(input.resourceId, auctionIdErrorMsg)
-    ) {
-      _ => input
-    }
   }
 }

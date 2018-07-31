@@ -5,16 +5,19 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import api.ErrorResponse.ErrorResponseMessage
 import api.ResponseUnmarshaller
+import db.dao.LimitedResult
 import entities.Lot
 import org.scalatest.{Matchers, WordSpec}
-import persistence.LimitedResult
+import extensions.Int2UUIDExtension._
+import helpers.DbBeforeAfter
 
 import scala.util.Try
 
-class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller {
+class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Routes with ResponseUnmarshaller with DbBeforeAfter {
 
   implicit val limResLotUm = jsonFormat4(LimitedResult[Lot])
 
+  val uuidRegex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
   val sealedLotsApi = Route.seal(lotsApi)
 
   "Lots Api" should {
@@ -22,7 +25,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     "return a created object id given valid POST data" in {
 
       val entity = HttpEntity(MediaTypes.`application/json`,
-        "{\"auctionId\": \"0ae024c0-0ddb-4e59-9e2c-721a27c386f6\", \"lotData\": \"Test lot\"}")
+        "{\"auctionId\": \"00000000-0000-0000-0000-000000000001\", \"lotData\": \"Test lot\"}")
 
       Post("/lots").withEntity(entity) ~> lotsApi ~> check {
         status shouldEqual StatusCodes.OK
@@ -40,7 +43,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     }
 
     "return a result with default limit and offset given a valid auction id" in {
-      Get("/lots?auctionId=4ac772c5-bc52-4d3c-ba9e-4010f511e175") ~> lotsApi ~> check {
+      Get("/lots?auctionId=00000000-0000-0000-0000-000000000001") ~> lotsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
 
@@ -55,7 +58,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
     }
 
     "return a result with limit and offset given in a request" in {
-      Get("/lots?auctionId=4ac772c5-bc52-4d3c-ba9e-4010f511e175&limit=1&offset=2") ~> lotsApi ~> check {
+      Get("/lots?auctionId=00000000-0000-0000-0000-000000000001&limit=1&offset=2") ~> lotsApi ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual ContentTypes.`application/json`
 
@@ -67,7 +70,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         limitedResult.total shouldEqual 3
         limitedResult.items.length shouldEqual 1
 
-        limitedResult.items.head.id shouldEqual "2e5faabf-47eb-40c1-a961-b1ca7e928b49"
+        limitedResult.items.head.id shouldEqual 3.asUUID
       }
     }
 
@@ -77,12 +80,10 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       }
     }
 
-    "return a 400 with error given bad format of UUID" in {
+    "return a 405 with error given bad format of UUID" in {
       Get("/lots?auctionId=4ac772c5-bc52-4d3c") ~> sealedLotsApi ~> check {
-        status shouldEqual StatusCodes.BadRequest
-
-        val errors = responseAs[ErrorResponseMessage]._embedded
-        errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
+        status shouldEqual StatusCodes.MethodNotAllowed
+        //TODO: are we OK with text/plain 405 error response?
       }
     }
 
@@ -108,14 +109,10 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
       val entity = HttpEntity(MediaTypes.`application/json`,
         "{\"auctionId\": \"721a27c386f6\", \"lotData\": \"    \"}")
 
-      Post("/lots").withEntity(entity) ~> lotsApi ~> check {
+      Post("/lots").withEntity(entity) ~> sealedLotsApi ~> check {
         status shouldEqual StatusCodes.BadRequest
 
-        val errors = responseAs[ErrorResponseMessage]._embedded
-        errors.length shouldBe 2
-
-        errors(0).message shouldEqual "Invalid auction Id. Please provide a valid UUID."
-        errors(1).message shouldEqual "Lot data cannot be empty."
+        //TODO: are we OK with text/plain 400 error response?
       }
     }
 
@@ -129,7 +126,7 @@ class LotsApiSpec extends WordSpec with Matchers with ScalatestRouteTest with Ro
         val errors = responseAs[ErrorResponseMessage]._embedded
         errors.length shouldBe 1
 
-        errors(0).message shouldEqual "Invalid auction Id. Auction does not exist."
+        errors(0).message should (fullyMatch regex (s"Unable to insert lot, id: $uuidRegex"))
       }
     }
   }
