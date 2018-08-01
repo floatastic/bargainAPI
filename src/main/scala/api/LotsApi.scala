@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshaller
-import akka.stream.scaladsl.Framing
+import akka.stream.scaladsl.{FileIO, Framing}
 import akka.util.ByteString
 import api.LotsApi.{LimitedResultRequest, PostInput}
 import config.Config
@@ -62,9 +62,9 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
               val sumF = byteSource.runFold(ByteString.empty) { case (acc, i) => acc ++ i }.map(s => s.utf8String)
 
               onSuccess(sumF) { sum =>
-                val tmpFile = File.createTempFile("thumbnail", ".txt")
+                val tmpFile = File.createTempFile(UUID.randomUUID().toString, ".jpg")
                 Files.write(Paths.get(tmpFile.getAbsolutePath), sum.getBytes)
-                println(StatusCodes.OK + "Successfully uploaded file locally, path: " + tmpFile.getAbsolutePath)
+                //println(StatusCodes.OK + "Successfully uploaded file locally, path: " + tmpFile.getAbsolutePath)
 
                 val uploadFuture = S3Uploader.upload(tmpFile, "promise.jpg")
 
@@ -78,6 +78,37 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
         }
       }
     } ~
+      path("thumbnailtmpstream") {
+        post {
+          extractRequestContext { ctx =>
+            implicit val materializer = ctx.materializer
+            implicit val ec = ctx.executionContext
+
+            fileUpload("file") {
+              case (metadata, byteSource) =>
+
+                val tmpFile = File.createTempFile(UUID.randomUUID().toString, ".txt")
+
+                val action = byteSource.runWith(FileIO.toPath(tmpFile.toPath))(materializer).map {
+                  case ior if ior.wasSuccessful => {
+
+                    val uploadFuture = S3Uploader.upload(tmpFile, "promise2.jpg")
+
+                    onComplete(uploadFuture) {
+                      case Success(_) => complete(StatusCodes.OK)
+                      case Failure(_) => complete(StatusCodes.FailedDependency)
+                    }
+                  }
+                  case ior => complete(StatusCodes.EnhanceYourCalm, ior.getError.toString)
+                }
+
+                onSuccess(action) { extraction =>
+                  complete(StatusCodes.OK)
+                }
+            }
+          }
+        }
+      } ~
     pathEnd {
       post {
         entity(as[PostInput]) { (input: PostInput) =>
