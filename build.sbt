@@ -14,7 +14,8 @@ libraryDependencies ++= Seq(
   "org.postgresql" % "postgresql" % "9.3-1100-jdbc4",
   "com.typesafe.slick" %% "slick" % "2.1.0",
   "org.flywaydb" % "flyway-core" % "5.1.4",
-  "c3p0" % "c3p0" % "0.9.1.2"
+  "c3p0" % "c3p0" % "0.9.1.2",
+  "com.amazonaws" % "aws-java-sdk" % "1.11.377"
 )
 
 libraryDependencies ++= Seq(

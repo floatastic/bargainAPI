@@ -1,17 +1,32 @@
 package api
 
+import java.io.File
+import java.nio.file.{Files, Paths}
 import java.util.UUID
 
+import com.amazonaws.event.ProgressEventType
 import akka.http.javadsl.unmarshalling.StringUnmarshaller
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.unmarshalling.Unmarshaller
+import akka.stream.scaladsl.Framing
+import akka.util.ByteString
 import api.LotsApi.{LimitedResultRequest, PostInput}
+import config.Config
 import db.dao.LotsDao
 import entities.LotData
 import mappings.JsonMappings
+import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials}
+import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.model.PutObjectRequest
+import com.amazonaws.ClientConfiguration
+import com.amazonaws.event.{ProgressEvent, ProgressListener}
+import com.amazonaws.regions.{Region, Regions}
 
-import scala.util.{Success, Try}
+import scala.concurrent.Future
+import scala.util.{Failure, Success, Try}
 
 object LotsApi {
   case class PostInput(auctionId: UUID, lotData: LotData)
@@ -35,6 +50,34 @@ object LotsApi {
 trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao {
 
   val lotsApi: Route = pathPrefix("lots") {
+    path("thumbnailtmpinmem") {
+      post {
+        extractRequestContext { ctx =>
+          implicit val materializer = ctx.materializer
+          implicit val ec = ctx.executionContext
+
+          fileUpload("file") {
+            case (metadata, byteSource) =>
+
+              val sumF = byteSource.runFold(ByteString.empty) { case (acc, i) => acc ++ i }.map(s => s.utf8String)
+
+              onSuccess(sumF) { sum =>
+                val tmpFile = File.createTempFile("thumbnail", ".txt")
+                Files.write(Paths.get(tmpFile.getAbsolutePath), sum.getBytes)
+                println(StatusCodes.OK + "Successfully uploaded file locally, path: " + tmpFile.getAbsolutePath)
+
+                val uploadFuture = S3Uploader.upload(tmpFile, "promise.jpg")
+
+                onComplete(uploadFuture) {
+                  case Success(_) => complete(StatusCodes.OK)
+                  case Failure(_)    => complete(StatusCodes.FailedDependency)
+
+                }
+              }
+          }
+        }
+      }
+    } ~
     pathEnd {
       post {
         entity(as[PostInput]) { (input: PostInput) =>
