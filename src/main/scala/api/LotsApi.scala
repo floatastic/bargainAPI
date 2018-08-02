@@ -59,10 +59,9 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
           fileUpload("file") {
             case (metadata, byteSource) =>
 
-              val sumF = byteSource.runFold(ByteString.empty) { case (acc, i) => acc ++ i }.map(s => s.utf8String)
+              val sumF = byteSource.runFold(ByteString.empty) { case (acc, i) => acc ++ i }
 
               onSuccess(sumF) { sum =>
-                Files.write(Paths.get(tmpFile.getAbsolutePath), sum.getBytes)
 
                 def extension(fileName: String): String =  fileName.lastIndexOf('.') match {
                   case 0 => ""
@@ -70,6 +69,7 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
                 }
 
                 val tmpFile = File.createTempFile(UUID.randomUUID().toString, "." + extension(metadata.fileName))
+                Files.write(Paths.get(tmpFile.getAbsolutePath), sum.toArray)
 
                 val tmpFilePath = tmpFile.toPath
 
