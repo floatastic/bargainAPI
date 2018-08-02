@@ -4,29 +4,16 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.UUID
 
-import com.amazonaws.event.ProgressEventType
-import akka.http.javadsl.unmarshalling.StringUnmarshaller
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.unmarshalling.Unmarshaller
-import akka.stream.scaladsl.{FileIO, Framing}
+import akka.stream.scaladsl.{FileIO}
 import akka.util.ByteString
 import api.LotsApi.{LimitedResultRequest, PostInput}
-import config.Config
 import db.dao.LotsDao
 import entities.LotData
 import mappings.JsonMappings
-import com.amazonaws.auth.{AWSCredentials, BasicAWSCredentials}
-import com.amazonaws.services.s3.AmazonS3Client
-import com.amazonaws.services.s3.model.PutObjectRequest
-import com.amazonaws.ClientConfiguration
-import com.amazonaws.event.{ProgressEvent, ProgressListener}
-import com.amazonaws.regions.{Region, Regions}
-
-import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 object LotsApi {
   case class PostInput(auctionId: UUID, lotData: LotData)
@@ -47,7 +34,7 @@ object LotsApi {
   }
 }
 
-trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao with LocalUploading {
 
   val lotsApi: Route = pathPrefix("lots") {
     path("thumbnailtmpinmem") {
@@ -59,21 +46,9 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
           fileUpload("file") {
             case (metadata, byteSource) =>
 
-              val sumF = byteSource.runFold(ByteString.empty) { case (acc, i) => acc ++ i }
+              onSuccess(uploadViaInMem(metadata, byteSource)) { file =>
 
-              onSuccess(sumF) { sum =>
-
-                def extension(fileName: String): String =  fileName.lastIndexOf('.') match {
-                  case 0 => ""
-                  case i => fileName.substring(i + 1)
-                }
-
-                val tmpFile = File.createTempFile(UUID.randomUUID().toString, "." + extension(metadata.fileName))
-                Files.write(Paths.get(tmpFile.getAbsolutePath), sum.toArray)
-
-                val tmpFilePath = tmpFile.toPath
-
-                val uploadFuture = S3Uploader.upload(tmpFile, tmpFilePath.getFileName.toString)
+                val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
 
                 onComplete(uploadFuture) {
                   case Success(_) => complete(StatusCodes.OK)
@@ -94,29 +69,15 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
             fileUpload("file") {
               case (metadata, byteSource) =>
 
-                def extension(fileName: String): String =  fileName.lastIndexOf('.') match {
-                  case 0 => ""
-                  case i => fileName.substring(i + 1)
-                }
+                onSuccess(uploadViaStream(metadata, byteSource)) { file =>
 
-                val tmpFile = File.createTempFile(UUID.randomUUID().toString, "." + extension(metadata.fileName))
-                val tmpFilePath = tmpFile.toPath
+                  val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
 
-                val action = byteSource.runWith(FileIO.toPath(tmpFilePath))(materializer).map {
-                  case ior if ior.wasSuccessful => {
+                  onComplete(uploadFuture) {
+                    case Success(_) => complete(StatusCodes.OK)
+                    case Failure(_)    => complete(StatusCodes.FailedDependency)
 
-                    val uploadFuture = S3Uploader.upload(tmpFile, tmpFilePath.getFileName.toString)
-
-                    onComplete(uploadFuture) {
-                      case Success(_) => complete(StatusCodes.OK)
-                      case Failure(_) => complete(StatusCodes.FailedDependency)
-                    }
                   }
-                  case ior => complete(StatusCodes.EnhanceYourCalm, ior.getError.toString)
-                }
-
-                onSuccess(action) { extraction =>
-                  complete(StatusCodes.OK)
                 }
             }
           }
