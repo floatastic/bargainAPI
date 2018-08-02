@@ -1,14 +1,10 @@
 package api
 
-import java.io.File
-import java.nio.file.{Files, Paths}
 import java.util.UUID
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.stream.scaladsl.{FileIO}
-import akka.util.ByteString
 import api.LotsApi.{LimitedResultRequest, PostInput}
 import db.dao.LotsDao
 import entities.LotData
@@ -79,6 +75,29 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
 
                   }
                 }
+            }
+          }
+        }
+      } ~
+      path("thumbnailalpakka") {
+        post {
+          extractRequestContext { ctx =>
+            implicit val materializer = ctx.materializer
+            implicit val ec = ctx.executionContext
+
+            extractActorSystem { actorSystem =>
+
+              fileUpload("file") {
+
+                case (metadata, byteSource) =>
+
+                  val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
+
+                  onComplete(uploadFuture) {
+                    case Success(_) => complete(StatusCodes.OK)
+                    case Failure(_) => complete(StatusCodes.FailedDependency)
+                  }
+              }
             }
           }
         }
