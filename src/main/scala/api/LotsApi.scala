@@ -62,11 +62,18 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
               val sumF = byteSource.runFold(ByteString.empty) { case (acc, i) => acc ++ i }.map(s => s.utf8String)
 
               onSuccess(sumF) { sum =>
-                val tmpFile = File.createTempFile(UUID.randomUUID().toString, ".jpg")
                 Files.write(Paths.get(tmpFile.getAbsolutePath), sum.getBytes)
-                //println(StatusCodes.OK + "Successfully uploaded file locally, path: " + tmpFile.getAbsolutePath)
 
-                val uploadFuture = S3Uploader.upload(tmpFile, "promise.jpg")
+                def extension(fileName: String): String =  fileName.lastIndexOf('.') match {
+                  case 0 => ""
+                  case i => fileName.substring(i + 1)
+                }
+
+                val tmpFile = File.createTempFile(UUID.randomUUID().toString, "." + extension(metadata.fileName))
+
+                val tmpFilePath = tmpFile.toPath
+
+                val uploadFuture = S3Uploader.upload(tmpFile, tmpFilePath.getFileName.toString)
 
                 onComplete(uploadFuture) {
                   case Success(_) => complete(StatusCodes.OK)
@@ -87,12 +94,18 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
             fileUpload("file") {
               case (metadata, byteSource) =>
 
-                val tmpFile = File.createTempFile(UUID.randomUUID().toString, ".txt")
+                def extension(fileName: String): String =  fileName.lastIndexOf('.') match {
+                  case 0 => ""
+                  case i => fileName.substring(i + 1)
+                }
 
-                val action = byteSource.runWith(FileIO.toPath(tmpFile.toPath))(materializer).map {
+                val tmpFile = File.createTempFile(UUID.randomUUID().toString, "." + extension(metadata.fileName))
+                val tmpFilePath = tmpFile.toPath
+
+                val action = byteSource.runWith(FileIO.toPath(tmpFilePath))(materializer).map {
                   case ior if ior.wasSuccessful => {
 
-                    val uploadFuture = S3Uploader.upload(tmpFile, "promise2.jpg")
+                    val uploadFuture = S3Uploader.upload(tmpFile, tmpFilePath.getFileName.toString)
 
                     onComplete(uploadFuture) {
                       case Success(_) => complete(StatusCodes.OK)
