@@ -31,45 +31,18 @@ object LotsApi {
   }
 }
 
-trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao with LocalUploading {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao  with FileHelper {
 
   val lotsApi: Route = pathPrefix("lots") {
-    path("thumbnailtmpinmem") {
-      withRequestTimeout(10.seconds) {
-        post {
-          extractRequestContext { ctx =>
-            implicit val materializer = ctx.materializer
-            implicit val ec = ctx.executionContext
-
-            fileUpload("file") {
-              case (metadata, byteSource) =>
-
-                onSuccess(uploadViaInMem(metadata, byteSource)) { file =>
-
-                  val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
-
-                  onComplete(uploadFuture) {
-                    case Success(_) => complete(StatusCodes.OK)
-                    case Failure(_)    => complete(StatusCodes.FailedDependency)
-
-                  }
-                }
-            }
-          }
-        }
-      }
-    } ~
-      path("thumbnailtmpstream") {
+      path("thumbnailtmpfile") {
         withRequestTimeout(10.seconds) {
           post {
             extractRequestContext { ctx =>
               implicit val materializer = ctx.materializer
               implicit val ec = ctx.executionContext
 
-              fileUpload("file") {
-                case (metadata, byteSource) =>
-
-                  onSuccess(uploadViaStream(metadata, byteSource)) { file =>
+              storeUploadedFile("file", tmpFile) {
+                case (_, file) => {
 
                     val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
 

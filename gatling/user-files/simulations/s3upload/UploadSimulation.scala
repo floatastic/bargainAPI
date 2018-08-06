@@ -2,6 +2,7 @@ package simulations
 
 import io.gatling.core.Predef._
 import io.gatling.http.Predef._
+import scala.concurrent.duration._
 
 class UploadSimulation extends Simulation {
 
@@ -10,14 +11,13 @@ class UploadSimulation extends Simulation {
   val httpConf = http
     .baseURL("http://0.0.0.0:9001/")
 
-  val scn = scenario("Upload 1 MB file to S3")
-//    .exec(uploadFileRequest("v1/lots/thumbnailtmpinmem", mb1FileName)
-//    .pause(30)
+  val scenarioAlpakka = scenario("Upload 1 MB file to S3 with alpakka")
     .exec(uploadFileRequest(alpakkaUploadPath, mb1FileName))
-    .pause(30)
-    .exec(uploadFileRequest(tmpFileStreamPath, mb1FileName))
 
-  setUp(scn.inject(rampUsers(4) over (30 seconds)).protocols(httpConf))
+  val scenarioTmpFile = scenario("Upload 1 MB file to S3 with tmp file")
+    .exec(uploadFileRequest(tmpFilePath, mb1FileName))
+
+  setUp(scenarioTmpFile.inject(rampUsers(4) over (20 seconds)).protocols(httpConf))
 
 
   def uploadFileRequest(path: String, fileName: String) = http(s"UploadFile size: $fileName, endpoint: $path")
@@ -27,8 +27,7 @@ class UploadSimulation extends Simulation {
 
 object UploadSimulation {
   val alpakkaUploadPath = "v1/lots/thumbnailalpakka"
-  val tmpFileToMemPath = "v1/lots/thumbnailtmpinmem"
-  val tmpFileStreamPath = "v1/lots/thumbnailtmpstream"
+  val tmpFilePath = "v1/lots/thumbnailtmpfile"
 
   val kb100FileName = "100kb"
   val kb512FileName = "512kb"
