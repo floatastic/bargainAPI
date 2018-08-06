@@ -7,6 +7,11 @@ scalaVersion := "2.12.6"
 fork in (Test) := true
 javaOptions in Test += "-Dconfig.file=src/main/resources/application.test.conf"
 
+//Uncomment for Java Mission Control profiling
+//javaOptions ++= Seq(
+//  "-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder"
+//)
+
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-http" % "10.1.3",
   "com.typesafe.akka" %% "akka-http-spray-json" % "10.1.3",
@@ -24,3 +29,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.5" % "test",
   "com.typesafe.akka" %% "akka-http-testkit" % "10.1.3"
 )
+
+/* Uncomment to work on Gatling scenarios */
+//libraryDependencies += "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.3.1"
