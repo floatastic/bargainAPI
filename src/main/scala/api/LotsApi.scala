@@ -10,6 +10,7 @@ import db.dao.LotsDao
 import entities.LotData
 import mappings.JsonMappings
 import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
 object LotsApi {
   case class PostInput(auctionId: UUID, lotData: LotData)
@@ -34,29 +35,7 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
 
   val lotsApi: Route = pathPrefix("lots") {
     path("thumbnailtmpinmem") {
-      post {
-        extractRequestContext { ctx =>
-          implicit val materializer = ctx.materializer
-          implicit val ec = ctx.executionContext
-
-          fileUpload("file") {
-            case (metadata, byteSource) =>
-
-              onSuccess(uploadViaInMem(metadata, byteSource)) { file =>
-
-                val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
-
-                onComplete(uploadFuture) {
-                  case Success(_) => complete(StatusCodes.OK)
-                  case Failure(_)    => complete(StatusCodes.FailedDependency)
-
-                }
-              }
-          }
-        }
-      }
-    } ~
-      path("thumbnailtmpstream") {
+      withRequestTimeout(10.seconds) {
         post {
           extractRequestContext { ctx =>
             implicit val materializer = ctx.materializer
@@ -65,7 +44,7 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
             fileUpload("file") {
               case (metadata, byteSource) =>
 
-                onSuccess(uploadViaStream(metadata, byteSource)) { file =>
+                onSuccess(uploadViaInMem(metadata, byteSource)) { file =>
 
                   val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
 
@@ -78,25 +57,53 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
             }
           }
         }
-      } ~
-      path("thumbnailalpakka") {
-        post {
-          extractRequestContext { ctx =>
-            implicit val materializer = ctx.materializer
-            implicit val ec = ctx.executionContext
-
-            extractActorSystem { actorSystem =>
+      }
+    } ~
+      path("thumbnailtmpstream") {
+        withRequestTimeout(10.seconds) {
+          post {
+            extractRequestContext { ctx =>
+              implicit val materializer = ctx.materializer
+              implicit val ec = ctx.executionContext
 
               fileUpload("file") {
-
                 case (metadata, byteSource) =>
 
-                  val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
+                  onSuccess(uploadViaStream(metadata, byteSource)) { file =>
 
-                  onComplete(uploadFuture) {
-                    case Success(_) => complete(StatusCodes.OK)
-                    case Failure(_) => complete(StatusCodes.FailedDependency)
+                    val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
+
+                    onComplete(uploadFuture) {
+                      case Success(_) => complete(StatusCodes.OK)
+                      case Failure(_) => complete(StatusCodes.FailedDependency)
+
+                    }
                   }
+              }
+            }
+          }
+        }
+      } ~
+      path("thumbnailalpakka") {
+        withRequestTimeout(10.seconds) {
+          post {
+            extractRequestContext { ctx =>
+              implicit val materializer = ctx.materializer
+              implicit val ec = ctx.executionContext
+
+              extractActorSystem { actorSystem =>
+
+                fileUpload("file") {
+
+                  case (metadata, byteSource) =>
+
+                    val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
+
+                    onComplete(uploadFuture) {
+                      case Success(_) => complete(StatusCodes.OK)
+                      case Failure(_) => complete(StatusCodes.FailedDependency)
+                    }
+                }
               }
             }
           }
