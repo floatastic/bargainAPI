@@ -4,6 +4,11 @@ version := "0.1"
 
 scalaVersion := "2.12.6"
 
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
+
+mainClass in Compile := Some("RestServer")
+
 fork in (Test) := true
 javaOptions in Test += "-Dconfig.file=src/main/resources/application.test.conf"
 
