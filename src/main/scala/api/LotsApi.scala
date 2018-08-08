@@ -35,7 +35,7 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
 
   val lotsApi: Route = pathPrefix("lots") {
       path("thumbnailtmpfile") {
-        withRequestTimeout(10.seconds) {
+        withRequestTimeout(120.seconds) {
           post {
             extractRequestContext { ctx =>
               implicit val materializer = ctx.materializer
@@ -58,7 +58,7 @@ trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao
         }
       } ~
       path("thumbnailalpakka") {
-        withRequestTimeout(10.seconds) {
+        withRequestTimeout(120.seconds) {
           post {
             extractRequestContext { ctx =>
               implicit val materializer = ctx.materializer
