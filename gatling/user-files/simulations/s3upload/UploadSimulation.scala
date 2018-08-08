@@ -17,7 +17,15 @@ class UploadSimulation extends Simulation {
   val scenarioTmpFile = scenario("Upload 1 MB file to S3 with tmp file")
     .exec(uploadFileRequest(tmpFilePath, mb1FileName))
 
-  setUp(scenarioTmpFile.inject(rampUsers(4) over (20 seconds)).protocols(httpConf))
+  setUp(
+    scenarioTmpFile.inject(
+      splitUsers(50) into (atOnceUsers(5)) separatedBy (30 seconds)
+    ).protocols(httpConf),
+
+    scenarioAlpakka.inject(
+      splitUsers(50) into (atOnceUsers(5)) separatedBy (30 seconds)
+    ).protocols(httpConf)
+  )
 
 
   def uploadFileRequest(path: String, fileName: String) = http(s"UploadFile size: $fileName, endpoint: $path")
