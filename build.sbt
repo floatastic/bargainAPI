@@ -1,11 +1,14 @@
 name := "bargainAPI"
 
-version := "0.1"
+version := "0.2.1"
 
 scalaVersion := "2.12.6"
 
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
+enablePlugins(AshScriptPlugin)
+
+dockerBaseImage       := "openjdk:jre-alpine"
 
 mainClass in Compile := Some("RestServer")
 
