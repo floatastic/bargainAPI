@@ -4,11 +4,12 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{PathMatchers, Route}
 import api.LotsApi.{LimitedResultRequest, PostInput}
 import db.dao.LotsDao
 import entities.LotData
 import mappings.JsonMappings
+
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
@@ -34,23 +35,27 @@ object LotsApi {
 trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao with FileHelper {
 
   val lotsApi: Route = pathPrefix("lots") {
-      path("thumbnailtmpfile") {
-        withRequestTimeout(120.seconds) {
-          extractRequestContext { ctx =>
-            implicit val materializer = ctx.materializer
-            implicit val ec = ctx.executionContext
+      path( PathMatchers.JavaUUID / "image" ) { uuid =>
+        withRequestTimeout(20.seconds) {
+          validate(exists(uuid), "Resource not found") {
 
-            storeUploadedFile("file", tmpFile) {
-              case (_, file) => {
+            extractRequestContext { ctx =>
+              implicit val materializer = ctx.materializer
 
-                  val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
+              extractActorSystem { actorSystem =>
 
-                  onComplete(uploadFuture) {
-                    case Success(_) => complete(StatusCodes.OK)
-                    case Failure(_) => complete(StatusCodes.FailedDependency)
+                fileUpload("file") {
 
-                  }
+                  case (metadata, byteSource) =>
+
+                    val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
+
+                    onComplete(uploadFuture) {
+                      case Success(_) => complete(StatusCodes.OK)
+                      case Failure(_) => complete(StatusCodes.FailedDependency)
+                    }
                 }
+              }
             }
           }
         }

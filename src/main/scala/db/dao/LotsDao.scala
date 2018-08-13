@@ -23,6 +23,8 @@ class LotsTable(tag: Tag) extends Table[Lot](tag, "lots"){
 
 trait LotsDao extends BaseDao with InputValidator {
 
+  def exists(id: UUID): Boolean = lotsTable.filter( _.id === id).exists.run
+
   def getLots(auctionId: UUID, maybeLimit: Option[Int], maybeOffset: Option[Int]): LimitedResult[Lot] = {
     val limit = maybeLimit.getOrElse(10)
     val offset = maybeOffset.getOrElse(0)
