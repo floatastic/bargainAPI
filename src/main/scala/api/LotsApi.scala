@@ -31,53 +31,26 @@ object LotsApi {
   }
 }
 
-trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao  with FileHelper {
+trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao with FileHelper {
 
   val lotsApi: Route = pathPrefix("lots") {
       path("thumbnailtmpfile") {
         withRequestTimeout(120.seconds) {
-          post {
-            extractRequestContext { ctx =>
-              implicit val materializer = ctx.materializer
-              implicit val ec = ctx.executionContext
+          extractRequestContext { ctx =>
+            implicit val materializer = ctx.materializer
+            implicit val ec = ctx.executionContext
 
-              storeUploadedFile("file", tmpFile) {
-                case (_, file) => {
+            storeUploadedFile("file", tmpFile) {
+              case (_, file) => {
 
-                    val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
+                  val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
 
-                    onComplete(uploadFuture) {
-                      case Success(_) => complete(StatusCodes.OK)
-                      case Failure(_) => complete(StatusCodes.FailedDependency)
+                  onComplete(uploadFuture) {
+                    case Success(_) => complete(StatusCodes.OK)
+                    case Failure(_) => complete(StatusCodes.FailedDependency)
 
-                    }
                   }
-              }
-            }
-          }
-        }
-      } ~
-      path("thumbnailalpakka") {
-        withRequestTimeout(120.seconds) {
-          post {
-            extractRequestContext { ctx =>
-              implicit val materializer = ctx.materializer
-              implicit val ec = ctx.executionContext
-
-              extractActorSystem { actorSystem =>
-
-                fileUpload("file") {
-
-                  case (metadata, byteSource) =>
-
-                    val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
-
-                    onComplete(uploadFuture) {
-                      case Success(_) => complete(StatusCodes.OK)
-                      case Failure(_) => complete(StatusCodes.FailedDependency)
-                    }
                 }
-              }
             }
           }
         }
