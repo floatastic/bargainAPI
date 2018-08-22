@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 trait TestUploadApi extends FileHelper {
-  val lotsApi: Route = pathPrefix("uploadtest") {
+  val testUploadApi: Route = pathPrefix("uploadtest") {
     path("tmpfile") {
       withRequestTimeout(120.seconds) {
         extractRequestContext { ctx =>

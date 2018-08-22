@@ -3,7 +3,8 @@ package config
 import com.typesafe.config.ConfigFactory
 
 trait Config {
-  private val config = ConfigFactory.load()
+  val config = ConfigFactory.load()
+
   private val httpConfig = config.getConfig("http")
   private val databaseConfig = config.getConfig("database")
   private val awsConfig = config.getConfig("aws")
