@@ -8,47 +8,39 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 trait TestUploadApi extends FileHelper {
+
+  import api.ActorSystemImplicits._
+
   val testUploadApi: Route = pathPrefix("uploadtest") {
     path("tmpfile") {
       withRequestTimeout(120.seconds) {
-        extractRequestContext { ctx =>
-          implicit val materializer = ctx.materializer
-          implicit val ec = ctx.executionContext
+        storeUploadedFile("file", tmpFile) {
+          case (_, file) => {
 
-          storeUploadedFile("file", tmpFile) {
-            case (_, file) => {
+            val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
 
-              val uploadFuture = S3Uploader.upload(file, file.toPath.getFileName.toString)
+            onComplete(uploadFuture) {
+              case Success(_) => complete(StatusCodes.OK)
+              case Failure(_) => complete(StatusCodes.FailedDependency)
 
-              onComplete(uploadFuture) {
-                case Success(_) => complete(StatusCodes.OK)
-                case Failure(_) => complete(StatusCodes.FailedDependency)
-
-              }
             }
           }
         }
       }
     } ~
       path("alpakka") {
-        withRequestTimeout(120.seconds) {
-          extractRequestContext { ctx =>
-            implicit val materializer = ctx.materializer
+        withRequestTimeout(500.seconds) {
+          fileUpload("file") {
 
-            extractActorSystem { actorSystem =>
+            case (metadata, byteSource) =>
+              val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata))
 
-              fileUpload("file") {
-
-                case (metadata, byteSource) =>
-
-                  val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
-
-                  onComplete(uploadFuture) {
-                    case Success(_) => complete(StatusCodes.OK)
-                    case Failure(_) => complete(StatusCodes.FailedDependency)
-                  }
+              onComplete(uploadFuture) {
+                case Success(_) => complete(StatusCodes.OK)
+                case Failure(e) => {
+                  println(e); complete(StatusCodes.FailedDependency)
+                }
               }
-            }
           }
         }
       }

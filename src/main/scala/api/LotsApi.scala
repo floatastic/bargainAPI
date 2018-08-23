@@ -9,6 +9,7 @@ import api.LotsApi.{LimitedResultRequest, PostInput}
 import db.dao.LotsDao
 import entities.LotData
 import mappings.JsonMappings
+import InputValidator._
 
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
@@ -34,28 +35,24 @@ object LotsApi {
 
 trait LotsApi extends BaseApi with JsonMappings with InputValidator with LotsDao with FileHelper {
 
+  import api.ActorSystemImplicits._
+
   val lotsApi: Route = pathPrefix("lots") {
       path( PathMatchers.JavaUUID / "image" ) { uuid =>
         withRequestTimeout(20.seconds) {
-          validate(exists(uuid), "Resource not found") {
+          validate(exists(uuid), lotNotFoundErrorMsg) {
+            fileUpload("file") {
 
-            extractRequestContext { ctx =>
-              implicit val materializer = ctx.materializer
+              case (metadata, byteSource) =>
 
-              extractActorSystem { actorSystem =>
+                val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata))
 
-                fileUpload("file") {
-
-                  case (metadata, byteSource) =>
-
-                    val uploadFuture = byteSource.runWith(S3Uploader.sink(metadata)(actorSystem, materializer))
-
-                    onComplete(uploadFuture) {
-                      case Success(_) => complete(StatusCodes.OK)
-                      case Failure(_) => complete(StatusCodes.FailedDependency)
-                    }
+                onComplete(uploadFuture) {
+                  case Success(uploadResult) => {
+                    complete(StatusCodes.OK)
+                  }
+                  case Failure(_) => complete(StatusCodes.FailedDependency)
                 }
-              }
             }
           }
         }

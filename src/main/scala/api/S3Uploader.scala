@@ -10,7 +10,7 @@ import akka.stream.alpakka.s3.{MemoryBufferType, S3Settings}
 import akka.stream.alpakka.s3.scaladsl.{MultipartUploadResult, S3Client}
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials, DefaultAWSCredentialsProviderChain}
+import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.event.{ProgressEvent, ProgressEventType, ProgressListener}
 import com.amazonaws.regions.{AwsRegionProvider, Region, Regions}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client, AmazonS3ClientBuilder}
@@ -22,6 +22,8 @@ import scala.concurrent.{Future, Promise}
 case class S3UploaderException(msg: String) extends Exception(msg)
 
 object S3Uploader extends Config with FileHelper {
+
+  import api.ActorSystemImplicits._
 
   val awsCredentialsProvider = new DefaultAWSCredentialsProviderChain()
 
@@ -55,19 +57,13 @@ object S3Uploader extends Config with FileHelper {
   val regionProvider = new AwsRegionProvider {
     def getRegion: String = Regions.EU_WEST_3.getName
   }
-  val alpakkaS3Settings = new S3Settings(MemoryBufferType, None, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
-  def sink(fileInfo: FileInfo)(implicit as: ActorSystem, m: Materializer) = {
-//    val regionProvider =
-//      new AwsRegionProvider {
-//        def getRegion: String = Regions.EU_WEST_3.getName
-//      }
-//
-//    val settings = new S3Settings(MemoryBufferType, None, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
-    val s3Client = new S3Client(alpakkaS3Settings)(as, m)
+  val alpakkaS3Client = new S3Client(
+    new S3Settings(MemoryBufferType, None, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
+  )
 
+  def sink(fileInfo: FileInfo) = {
     val key = tmpFileName(fileInfo)
-
-    s3Client.multipartUpload(s3Bucket, key._1 + key._2)
+    alpakkaS3Client.multipartUpload(s3Bucket, key._1 + key._2)
   }
 }

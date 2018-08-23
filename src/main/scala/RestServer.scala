@@ -10,9 +10,8 @@ import scala.io.StdIn
 
 object RestServer extends App with Config with Routes with Migrator {
 
-  implicit val system = ActorSystem()
-  implicit val materializer = ActorMaterializer()
-  implicit val executionContext = system.dispatcher
+  import api.ActorSystemImplicits._
+
   protected val log: LoggingAdapter = Logging(system, getClass)
 
   migrateUp

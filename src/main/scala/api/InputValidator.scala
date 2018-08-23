@@ -10,6 +10,7 @@ object InputValidator {
   val auctionIdErrorMsg = "Invalid auction Id. Please provide a valid UUID."
   val auctionNotFoundErrorMsg = "Invalid auction Id. Auction does not exist."
   val auctionDataErrorMsg = "Auction data cannot be empty."
+  val lotNotFoundErrorMsg = "Invalid lot Id. Lot does not exist."
   val lotDataErrorMsg = "Lot data cannot be empty."
   val limitErrorMsg = "Limit should be a value between 0 and 100 (right inclusive)."
   val offsetErrorMsg = "Offset should be a value greater than 0."
