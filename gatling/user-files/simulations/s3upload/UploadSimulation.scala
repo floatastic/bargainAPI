@@ -11,19 +11,21 @@ class UploadSimulation extends Simulation {
   val httpConf = http
     .baseURL("http://0.0.0.0:9001/")
 
-  val scenarioAlpakka = scenario("Upload 1 MB file to S3 with alpakka")
-    .exec(uploadFileRequest(alpakkaUploadPath, mb1FileName))
+  val scenarioAlpakka = scenario("Upload 10kb file to S3 with alpakka")
+    .exec(uploadFileRequest(alpakkaUploadPath, kb10FileName))
 
-  val scenarioTmpFile = scenario("Upload 1 MB file to S3 with tmp file")
-    .exec(uploadFileRequest(tmpFilePath, mb1FileName))
+  val scenarioTmpFile = scenario("Upload 10kb file to S3 with tmp file")
+    .exec(uploadFileRequest(tmpFilePath, kb10FileName))
 
   setUp(
-    scenarioTmpFile.inject(
-      splitUsers(50) into (atOnceUsers(5)) separatedBy (30 seconds)
-    ).protocols(httpConf),
+//    scenarioTmpFile.inject(
+//      atOnceUsers(1000)
+//      //splitUsers(50) into (atOnceUsers(5)) separatedBy (30 seconds)
+//    ).protocols(httpConf),
 
     scenarioAlpakka.inject(
-      splitUsers(50) into (atOnceUsers(5)) separatedBy (30 seconds)
+      atOnceUsers(1000)
+      //splitUsers(50) into (atOnceUsers(5)) separatedBy (30 seconds)
     ).protocols(httpConf)
   )
 
@@ -34,10 +36,8 @@ class UploadSimulation extends Simulation {
 }
 
 object UploadSimulation {
-  val alpakkaUploadPath = "v1/lots/thumbnailalpakka"
-  val tmpFilePath = "v1/lots/thumbnailtmpfile"
+  val alpakkaUploadPath = "v1/uploadtest/alpakka"
+  val tmpFilePath = "v1/uploadtest/tmpfile"
 
-  val kb100FileName = "100kb"
-  val kb512FileName = "512kb"
-  val mb1FileName = "1mb"
+  val kb10FileName = "10kb"
 }

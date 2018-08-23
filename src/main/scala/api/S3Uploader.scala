@@ -22,8 +22,11 @@ import scala.concurrent.{Future, Promise}
 case class S3UploaderException(msg: String) extends Exception(msg)
 
 object S3Uploader extends Config with FileHelper {
+
+  val awsCredentialsProvider = new DefaultAWSCredentialsProviderChain()
+
   val s3Client: AmazonS3 = AmazonS3ClientBuilder.standard()
-    .withCredentials(new DefaultAWSCredentialsProviderChain())
+    .withCredentials(awsCredentialsProvider)
     .withRegion(Regions.EU_WEST_3)
     .build()
 
@@ -49,14 +52,19 @@ object S3Uploader extends Config with FileHelper {
     promise.future
   }
 
-  def sink(fileInfo: FileInfo)(implicit as: ActorSystem, m: Materializer) = {
-    val regionProvider =
-      new AwsRegionProvider {
-        def getRegion: String = Regions.EU_WEST_3.getName
-      }
+  val regionProvider = new AwsRegionProvider {
+    def getRegion: String = Regions.EU_WEST_3.getName
+  }
+  val alpakkaS3Settings = new S3Settings(MemoryBufferType, None, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
 
-    val settings = new S3Settings(MemoryBufferType, None, new DefaultAWSCredentialsProviderChain(), regionProvider, false, None, ListBucketVersion2)
-    val s3Client = new S3Client(settings)(as, m)
+  def sink(fileInfo: FileInfo)(implicit as: ActorSystem, m: Materializer) = {
+//    val regionProvider =
+//      new AwsRegionProvider {
+//        def getRegion: String = Regions.EU_WEST_3.getName
+//      }
+//
+//    val settings = new S3Settings(MemoryBufferType, None, awsCredentialsProvider, regionProvider, false, None, ListBucketVersion2)
+    val s3Client = new S3Client(alpakkaS3Settings)(as, m)
 
     val key = tmpFileName(fileInfo)
 
